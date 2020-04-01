@@ -10,7 +10,11 @@ namespace fhir_integration
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("hello");
+            Console.WriteLine("FHIR Integrator \n");
+
+            ConfigurationHandler config = new ConfigurationHandler("C:/Users/Hoang/Desktop/test.xml");
+            config.LoadConfig();
+            
             Console.ReadKey();
         }
     }
