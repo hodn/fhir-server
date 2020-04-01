@@ -25,14 +25,14 @@ namespace fhir_integration
 
         public void LoadConfig()
         {
-            XmlDocument configDoc = new XmlDocument();
-            configDoc.Load(this.configPath);
-
-            XmlNodeList xnList = configDoc.GetElementsByTagName("config");
-
-            foreach (XmlNode node in xnList)
+            try
             {
-                try
+                XmlDocument configDoc = new XmlDocument();
+                configDoc.Load(configPath);
+
+                XmlNodeList xnList = configDoc.GetElementsByTagName("config");
+
+                foreach (XmlNode node in xnList)
                 {
                     startTime = DateTime.ParseExact(node["startTime"].InnerText, "H:mm", null, System.Globalization.DateTimeStyles.None);
                     interval = int.Parse(node["interval"].InnerText);
@@ -40,22 +40,22 @@ namespace fhir_integration
                     email = node["email"].InnerText;
                     logDirectory = node["logDirectory"].InnerText;
 
-                    Console.WriteLine("----Configuration loaded----");
+                    Console.WriteLine("\n----Configuration loaded----");
                     Console.WriteLine("Start at: " + startTime.ToString());
                     Console.WriteLine("Interval: " + interval.ToString() + " mins");
                     Console.WriteLine("Recovery interval: " + retryInterval.ToString() + " mins");
                     Console.WriteLine("Notification email: " + email.ToString());
                     Console.WriteLine("Log directory: " + logDirectory.ToString());
 
-                }
-                catch (FormatException)
-                {
-                    Console.WriteLine("Incorrect configuration format - use H:MM for start time, minutes for intervals");
-                }
 
-                
+                };
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Invalid configuration: " + e.Message);
 
             }
+
         }
     }
 }

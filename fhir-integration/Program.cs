@@ -11,8 +11,10 @@ namespace fhir_integration
         static void Main(string[] args)
         {
             Console.WriteLine("FHIR Integrator \n");
+            Console.WriteLine("Enter configuration file path: ");
+            string configPath = Console.ReadLine();
 
-            ConfigurationHandler config = new ConfigurationHandler("C:/Users/Hoang/Desktop/test.xml");
+            ConfigurationHandler config = new ConfigurationHandler(configPath);
             config.LoadConfig();
             
             Console.ReadKey();
