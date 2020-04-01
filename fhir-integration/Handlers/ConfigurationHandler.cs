@@ -48,6 +48,7 @@ namespace fhir_integration
                     Console.WriteLine("Recovery interval: " + retryInterval.ToString() + " mins");
                     Console.WriteLine("Notification email: " + email.ToString());
                     Console.WriteLine("Log directory: " + logDirectory.ToString());
+                    Console.WriteLine("\n");
 
 
                 };
@@ -72,7 +73,7 @@ namespace fhir_integration
                     // Create a file to write to.
                     using (StreamWriter sw = File.CreateText(logPath))
                     {
-                        sw.WriteLine("{0}; {1} ", DateTime.Now.ToString(), "Config loaded ");
+                        sw.WriteLine("{0}; {1} ", DateTime.Now.ToString(), "Initial start");
                     }
                 }
             }
@@ -89,7 +90,6 @@ namespace fhir_integration
         {
             try
             {
-
                 if (File.Exists(logPath))
                 {
                     // Create a file to write to.
