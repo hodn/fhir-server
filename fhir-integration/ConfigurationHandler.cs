@@ -72,7 +72,30 @@ namespace fhir_integration
                     // Create a file to write to.
                     using (StreamWriter sw = File.CreateText(logPath))
                     {
-                        sw.WriteLine("{0}; {1}", startTime, "Initial log");
+                        sw.WriteLine("{0}; {1} ", DateTime.Now.ToString(), "Config loaded ");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Log file error: " + e.Message);
+
+            }
+
+
+        }
+
+        public void AddLog(string log)
+        {
+            try
+            {
+
+                if (File.Exists(logPath))
+                {
+                    // Create a file to write to.
+                    using (StreamWriter sw = File.AppendText(logPath))
+                    {
+                        sw.WriteLine("{0}; {1}", DateTime.Now.ToString(), log);
                     }
                 }
             }
