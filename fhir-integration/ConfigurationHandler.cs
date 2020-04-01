@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ namespace fhir_integration
         public int retryInterval { get; set; }
         public string email { get; set; }
         public string logDirectory { get; set; }
+        public string logPath { get; set; }
 
 
         public ConfigurationHandler(string configPath)
@@ -57,5 +59,31 @@ namespace fhir_integration
             }
 
         }
+
+        public void CreateLogFile()
+        {
+            try
+            {
+                string fileName = "/FHIR_Logs_" + startTime.ToString("d") + ".txt";
+                logPath = Path.Combine(logDirectory + fileName);
+
+                if (!File.Exists(logPath))
+                {
+                    // Create a file to write to.
+                    using (StreamWriter sw = File.CreateText(logPath))
+                    {
+                        sw.WriteLine("{0}; {1}", startTime, "Initial log");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Log file error: " + e.Message);
+
+            }
+
+
+        }
     }
+
 }
