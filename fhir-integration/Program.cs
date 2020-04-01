@@ -11,7 +11,8 @@ namespace fhir_integration
         static void Main(string[] args)
         {
             Transformer transformer = new Transformer();
-            transformer.connectDB();
+            transformer.ConnectDB("abuelo.ictm.albertov.cz", "test", "test", "test");
+            transformer.getUnsyncedData();
 
             Console.WriteLine("FHIR Integrator \n");
 

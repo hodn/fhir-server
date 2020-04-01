@@ -9,34 +9,54 @@ namespace fhir_integration
 {
     class Transformer
     {
+        private SqlConnection connection { get; set; }
 
         public Transformer()
         {
-            
+
         }
 
-        public void connectDB()
+        public void ConnectDB(string dataSource, string userId, string pass, string catalog)
         {
             try
             {
                 SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
-                builder.DataSource = "abuelo.ictm.albertov.cz";
-                builder.UserID = "test";
-                builder.Password = "test";
-                builder.InitialCatalog = "test";
+                builder.DataSource = dataSource;
+                builder.UserID = userId;
+                builder.Password = pass;
+                builder.InitialCatalog = catalog;
 
-                using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
-                {
-                    Console.WriteLine("\nQuery data example:");
-                    Console.WriteLine("=========================================\n");
+                SqlConnection conn = new SqlConnection(builder.ConnectionString);
+                
+                connection = conn;
 
-                    connection.Open();
-                }
             }
-            catch (SqlException e)
+            catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
+        }
+
+        public void getUnsyncedData()
+        {
+            string queryString = "SELECT * FROM Users";
+            SqlCommand command = new SqlCommand(queryString, connection);
+
+            connection.Open();
+            SqlDataReader reader = command.ExecuteReader();
+            try
+            {
+                while (reader.Read())
+                {
+                    Console.WriteLine("{0} {1}", reader.GetInt32(0), reader.GetString(1));
+                }
+            }
+            finally
+            {
+                reader.Close();
+            }
+
+            connection.Close();
         }
     }
 }
