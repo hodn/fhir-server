@@ -22,7 +22,9 @@ namespace fhir_integration
 
             Connector connector = new Connector();
             Transformer transformer = new Transformer(connector);
-      
+
+            connector.initFhirConnection();
+             
             transformer.ConnectDB("abuelo.ictm.albertov.cz", "test", "test", "test");
             transformer.getUnsyncedData();
             transformer.parsePatient(11);

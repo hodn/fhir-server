@@ -96,7 +96,7 @@ namespace fhir_integration
 
                 foreach (DataRow row in resultUser.Rows)
                 {
-                    if (row["fhirId"] == DBNull.Value) connector.getFhirId("patient", patient["nationalIdentificationNumber"]);
+                    if (row["fhirId"] == DBNull.Value) connector.getFhirId(patient["nationalIdentificationNumber"]);
 
                     patient.Add("firstName", row["firstName"].ToString());
                     patient.Add("lastName", row["lastName"].ToString());
