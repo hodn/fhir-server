@@ -20,10 +20,12 @@ namespace fhir_integration
             config.LoadConfig();
             config.CreateLogFile();
 
-
-            Transformer transformer = new Transformer();
+            Connector connector = new Connector();
+            Transformer transformer = new Transformer(connector);
+      
             transformer.ConnectDB("abuelo.ictm.albertov.cz", "test", "test", "test");
             transformer.getUnsyncedData();
+            transformer.parsePatient(11);
 
             Console.ReadKey();
         }

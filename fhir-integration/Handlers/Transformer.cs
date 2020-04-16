@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace fhir_integration
@@ -11,10 +12,11 @@ namespace fhir_integration
     class Transformer
     {
         private SqlConnection connection { get; set; }
+        private Connector connector { get; set; }
 
-        public Transformer()
+        public Transformer(Connector connector)
         {
-            
+            this.connector = connector;   
         }
 
         // Building connection string for DB
@@ -62,15 +64,55 @@ namespace fhir_integration
             return unsyncedData;
         }
 
-        private Dictionary<string, string> parsePatient(int userId)
+        public void parsePatient(int userId)
         {
             // Finds FHIR ID, first name, last name - USERS table
             // Finds national Identification number - Patients table
             // Returns FHIR ID, first name, last name, NiNO
-            return null;
+            var patient = new Dictionary<string, string>();
+            string queryStringUsers = "SELECT * FROM Users WHERE userId=" + userId.ToString();
+            string queryStringPatients = "SELECT * FROM Patients WHERE patientId=" + userId.ToString();
+            SqlCommand commandUsers = new SqlCommand(queryStringUsers, connection);
+            SqlCommand commandPatients = new SqlCommand(queryStringPatients, connection);
+
+            try
+            {
+                connection.Open();
+                DataTable resultUser = new DataTable();
+                DataTable resultPatients = new DataTable();
+                SqlDataAdapter daUsers = new SqlDataAdapter(commandUsers);
+                SqlDataAdapter daPatients = new SqlDataAdapter(commandPatients);
+                daUsers.Fill(resultUser);
+                daPatients.Fill(resultPatients);
+                daUsers.Dispose();
+                daPatients.Dispose();
+
+                foreach (DataRow row in resultPatients.Rows)
+                {
+                    string nationalIdentificationNumber = row["nationalIdentificationNumber"].ToString();
+                    nationalIdentificationNumber = Regex.Replace(nationalIdentificationNumber, @"[^\d]", "");
+                    patient.Add("nationalIdentificationNumber", nationalIdentificationNumber);
+                }
+
+                foreach (DataRow row in resultUser.Rows)
+                {
+                    if (row["fhirId"] == DBNull.Value) connector.getFhirId("patient", patient["nationalIdentificationNumber"]);
+
+                    patient.Add("firstName", row["firstName"].ToString());
+                    patient.Add("lastName", row["lastName"].ToString());
+
+                }
+            }
+            finally
+            {
+                connection.Close();
+            }
+
+            
+
         }
 
-        private Dictionary<string, string> parsePractitioner(int userId)
+        public Dictionary<string, string> parsePractitioner(int userId)
         {
             // Finds FHIR ID, first name, last name - USERS table
             // Finds national Identification number - Doctors table
