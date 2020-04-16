@@ -10,18 +10,20 @@ namespace fhir_integration
     {
         static void Main(string[] args)
         {
-            Transformer transformer = new Transformer();
-            transformer.ConnectDB("abuelo.ictm.albertov.cz", "test", "test", "test");
-            transformer.getUnsyncedData();
 
             Console.WriteLine("FHIR Integrator \n");
 
             Console.WriteLine("Enter configuration file path: ");
-            string configPath = Console.ReadLine();
+            string configPath = "C:/Users/Hoang/Desktop/test.xml";
 
             ConfigurationHandler config = new ConfigurationHandler(configPath);
             config.LoadConfig();
             config.CreateLogFile();
+
+
+            Transformer transformer = new Transformer();
+            transformer.ConnectDB("abuelo.ictm.albertov.cz", "test", "test", "test");
+            transformer.getUnsyncedData();
 
             Console.ReadKey();
         }

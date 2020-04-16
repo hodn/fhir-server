@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
@@ -13,9 +14,10 @@ namespace fhir_integration
 
         public Transformer()
         {
-
+            
         }
 
+        // Building connection string for DB
         public void ConnectDB(string dataSource, string userId, string pass, string catalog)
         {
             try
@@ -37,26 +39,51 @@ namespace fhir_integration
             }
         }
 
-        public void getUnsyncedData()
+        // Finds unsynced BloodPressureMeasurements in DB
+        public DataTable getUnsyncedData()
         {
-            string queryString = "SELECT * FROM Users";
+            DataTable unsyncedData = new DataTable();
+            string queryString = "SELECT * FROM BloodPressureMeasurements WHERE isDeleted=0 AND fhirSynced=0";
             SqlCommand command = new SqlCommand(queryString, connection);
 
             connection.Open();
-            SqlDataReader reader = command.ExecuteReader();
+     
             try
             {
-                while (reader.Read())
-                {
-                    Console.WriteLine("{0} {1}", reader.GetInt32(0), reader.GetString(1));
-                }
+                SqlDataAdapter da = new SqlDataAdapter(command);
+                da.Fill(unsyncedData);
+                da.Dispose();
             }
             finally
             {
-                reader.Close();
+                connection.Close();
             }
 
-            connection.Close();
+            return unsyncedData;
+        }
+
+        private Dictionary<string, string> parsePatient(int userId)
+        {
+            // Finds FHIR ID, first name, last name - USERS table
+            // Finds national Identification number - Patients table
+            // Returns FHIR ID, first name, last name, NiNO
+            return null;
+        }
+
+        private Dictionary<string, string> parsePractitioner(int userId)
+        {
+            // Finds FHIR ID, first name, last name - USERS table
+            // Finds national Identification number - Doctors table
+            // If FHIR ID is NULL -> getFHIR ID
+            // Returns FHIR ID, first name, last name, evidenceNumber
+            return null;
+        }
+
+        public void parseObservation()
+        {
+
         }
     }
+        
+
 }

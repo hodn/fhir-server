@@ -25,6 +25,8 @@ namespace fhir_integration
             this.configPath = configPath;
         }
 
+
+        // Loading configuration from XML file
         public void LoadConfig()
         {
             try
@@ -61,6 +63,7 @@ namespace fhir_integration
 
         }
 
+        // Creating log file for the current instance
         public void CreateLogFile()
         {
             try
@@ -86,6 +89,7 @@ namespace fhir_integration
 
         }
 
+        // Adding logs to existing log file
         public void AddLog(string log)
         {
             try
