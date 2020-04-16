@@ -64,6 +64,7 @@ namespace fhir_integration
             return unsyncedData;
         }
 
+        // Finds all info about patient upon ID from DB, gets FHIR ID from FHIR server
         public Dictionary<string, string> parsePatient(int userId)
         {
             // Finds FHIR ID, first name, last name - USERS table
@@ -98,7 +99,9 @@ namespace fhir_integration
                 foreach (DataRow row in resultUser.Rows)
                 {
                     if (row["fhirId"] == DBNull.Value) {
-                        patient.Add("fhirId", connector.getFhirId(patient["nationalIdentificationNumber"]));
+                        string fhirId = connector.getFhirId(patient["nationalIdentificationNumber"]);
+                        patient.Add("fhirId", fhirId);
+                        updateFhirId(fhirId, userId);
                     };
 
                     patient.Add("firstName", row["firstName"].ToString());
@@ -118,7 +121,7 @@ namespace fhir_integration
             return patient;
 
         }
-
+        
         public Dictionary<string, string> parsePractitioner(int userId)
         {
             // Finds FHIR ID, first name, last name - USERS table
@@ -128,19 +131,22 @@ namespace fhir_integration
             return null;
         }
 
-        public void parseObservation()
-        {
-            // Patient, practitioner and data from BloodPressure Measurements
-        }
-
-        public void tagAsSynced()
+        public void tagAsSynced(int measurementId)
         {
 
         }
 
-        public void updateFhirId()
+        public void updateFhirId(string fhirId, int userId)
         {
-
+         
+            string query = "UPDATE Users SET fhirId=@fhirId WHERE userId=@userId";
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@userId", userId);
+                command.Parameters.AddWithValue("@fhirId", fhirId);
+                int radku = command.ExecuteNonQuery();
+                Console.WriteLine(fhirId);
+            }
         }
     }
         

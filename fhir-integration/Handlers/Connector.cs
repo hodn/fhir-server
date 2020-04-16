@@ -39,13 +39,7 @@ namespace fhir_integration
 
                 foreach (var e in results.Entry)
                 {
-                    // Let's write the fully qualified url for the resource to the console:
-                    Console.WriteLine("Full url for this resource: " + e.FullUrl);
-
                     var patient = (Patient)e.Resource;
-
-                    // Do something with this patient, for example write the family name that's in the first
-                    // element of the name list to the console:
                     fhirId = patient.Id.ToString();
                 }
 
@@ -59,6 +53,7 @@ namespace fhir_integration
             
         }
 
+        // Testing purposes
         public void testUploadPatient()
         {
             var pat = new Patient();
@@ -121,6 +116,18 @@ namespace fhir_integration
 
             var created_pat = client.Create(pat);
             Console.WriteLine("Doktor");
+        }
+
+        public void update()
+        {
+
+            var pat_A = client.Read<Patient>("Patient/3");
+            var reference = new ResourceReference();
+            reference.Reference = "http://abuelo.ictm.albertov.cz/Spark/fhir/Practitioner/1";
+            reference.Display = "Miroslav Milý 1110905143";
+            pat_A.CareProvider.Add(reference);
+            var updated_pat = client.Update(pat_A);
+
         }
     }
 }
