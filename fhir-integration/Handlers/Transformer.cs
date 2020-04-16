@@ -13,10 +13,12 @@ namespace fhir_integration
     {
         private SqlConnection connection { get; set; }
         private Connector connector { get; set; }
+        private ConfigurationHandler config { get; set; }
 
-        public Transformer(Connector connector)
+        public Transformer(Connector connector, ConfigurationHandler config)
         {
-            this.connector = connector;   
+            this.connector = connector;
+            this.config = config;
         }
 
         // Building connection string for DB
@@ -64,12 +66,9 @@ namespace fhir_integration
             return unsyncedData;
         }
 
-        // Finds all info about patient upon ID from DB, gets FHIR ID from FHIR server
+        // Finds all info about patient upon ID from DB, if needed gets FHIR ID from FHIR server
         public Dictionary<string, string> parsePatient(int userId)
         {
-            // Finds FHIR ID, first name, last name - USERS table
-            // Finds national Identification number - Patients table
-            // Returns FHIR ID, first name, last name, NiNO
             var patient = new Dictionary<string, string>();
             string queryStringUsers = "SELECT * FROM Users WHERE userId=" + userId.ToString();
             string queryStringPatients = "SELECT * FROM Patients WHERE patientId=" + userId.ToString();
@@ -93,7 +92,7 @@ namespace fhir_integration
                     string nationalIdentificationNumber = row["nationalIdentificationNumber"].ToString();
                     nationalIdentificationNumber = Regex.Replace(nationalIdentificationNumber, @"[^\d]", "");
                     patient.Add("nationalIdentificationNumber", nationalIdentificationNumber);
-                    patient.Add("assignedDoctor", row["assignedDoctor"].ToString());
+                    patient.Add("assignedDoctorId", row["assignedDoctor"].ToString());
                 }
 
                 foreach (DataRow row in resultUser.Rows)
@@ -102,11 +101,13 @@ namespace fhir_integration
                         string fhirId = connector.getFhirId(patient["nationalIdentificationNumber"]);
                         patient.Add("fhirId", fhirId);
                         updateFhirId(fhirId, userId);
-                    };
+                    } else
+                    {
+                        patient.Add("fhirId", row["fhirId"].ToString());
+                    }
 
                     patient.Add("firstName", row["firstName"].ToString());
                     patient.Add("lastName", row["lastName"].ToString());
-
                 }
             }
             catch(Exception e)
@@ -118,7 +119,7 @@ namespace fhir_integration
                 connection.Close();
             }
 
-            return patient;
+            return patient; // firstName, lastName, fhirId, assignedDoctorId, nationalIdentificationNumber
 
         }
         
@@ -133,20 +134,48 @@ namespace fhir_integration
 
         public void tagAsSynced(int measurementId)
         {
-
+            try
+            {
+                connection.Open();
+                string query = "UPDATE BloodPressureMeasurements SET fhirSynced=1 WHERE measurementId=@measurementId";
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@measurementId", measurementId);
+                    command.ExecuteNonQuery();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            finally
+            {
+                connection.Close();
+            }
         }
 
         public void updateFhirId(string fhirId, int userId)
         {
-         
-            string query = "UPDATE Users SET fhirId=@fhirId WHERE userId=@userId";
-            using (SqlCommand command = new SqlCommand(query, connection))
+            try
             {
-                command.Parameters.AddWithValue("@userId", userId);
-                command.Parameters.AddWithValue("@fhirId", fhirId);
-                int radku = command.ExecuteNonQuery();
-                Console.WriteLine(fhirId);
+                connection.Open();
+                string query = "UPDATE Users SET fhirId=@fhirId WHERE userId=@userId";
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@userId", userId);
+                    command.Parameters.AddWithValue("@fhirId", fhirId);
+                    command.ExecuteNonQuery();
+                }
             }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            finally
+            {
+                connection.Close();
+            }
+            
         }
     }
         

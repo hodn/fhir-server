@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,13 +21,22 @@ namespace fhir_integration
             config.LoadConfig();
             config.CreateLogFile();
 
-            Connector connector = new Connector();
-            Transformer transformer = new Transformer(connector);
+            Connector connector = new Connector(config);
+            Transformer transformer = new Transformer(connector, config);
 
             connector.initFhirConnection();
             transformer.ConnectDB("abuelo.ictm.albertov.cz", "test", "test", "test");
-            transformer.getUnsyncedData(); // foreach in unsyncedData - parse Patient, Performer, core data - parse Observation, send it to FHIR server, log it in DB if synced
-            transformer.parsePatient(11);
+
+            var unsyncedData = transformer.getUnsyncedData();
+
+            foreach (DataRow row in unsyncedData.Rows)
+            {
+                int userId = int.Parse(row["patientId"].ToString());
+                Dictionary<string, string> patient = transformer.parsePatient(userId);
+                int savedMeasurementId = connector.SaveFhirObservation(patient, row);
+                transformer.tagAsSynced(savedMeasurementId);
+            }
+            
 
             Console.ReadKey();
         }

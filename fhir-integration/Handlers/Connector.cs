@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,10 +13,11 @@ namespace fhir_integration
     class Connector
     {
         private FhirClient client { get; set; }
+        private ConfigurationHandler config { get; set; }
 
-        public Connector()
+        public Connector(ConfigurationHandler config)
         {
-
+            this.config = config;
         }
 
         public void initFhirConnection()
@@ -23,8 +25,55 @@ namespace fhir_integration
             client = new FhirClient("http://abuelo.ictm.albertov.cz/Spark/fhir");
         }
 
-        public void SaveFhirObservation()
+        public int SaveFhirObservation(Dictionary<string, string> patient, DataRow measurement)
         {
+
+            try
+            {
+                int measurementId = int.Parse(measurement["measurementId"].ToString());
+                var obs = new Observation();
+
+                var id = new Identifier();
+                id.System = "http://abuelo.ictm.albertov.cz/";
+                id.Value = "abuelo" + measurementId.ToString();
+                obs.Identifier.Add(id);
+
+                obs.Status = Observation.ObservationStatus.Final;
+
+                var cat = new CodeableConcept("http://terminology.hl7.org/CodeSystem/observation-category", "vital-signs");
+                obs.Category = cat;
+
+                var type = new CodeableConcept("LOINC", "85354-9");
+                obs.Code = type;
+
+                DateTime convertedDate = DateTime.Parse(measurement["measurementTs"].ToString());
+                obs.Effective = new FhirDateTime(convertedDate);
+
+                var sub = new ResourceReference();
+                sub.Reference = "http://abuelo.ictm.albertov.cz/Spark/fhir/Patient/" + patient["fhirId"];
+                sub.Display = patient["nationalIdentificationNumber"] + " " + patient["lastName"] + " " + patient["firstName"];
+                obs.Subject = sub;
+
+                var sys = new Observation.ComponentComponent();
+                sys.Code = new CodeableConcept("LOINC", "85354-9", "Systolic blood pressure");
+                sys.Value = new FhirString(measurement["sysPressure"].ToString());
+                obs.Component.Add(sys);
+
+                var dia = new Observation.ComponentComponent();
+                sys.Code = new CodeableConcept("LOINC", "8462-4", "Diastolic blood pressure'");
+                sys.Value = new FhirString(measurement["diaPressure"].ToString());
+                obs.Component.Add(sys);
+
+                var createdObs = client.Create(obs);
+
+                return measurementId;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
+            return 0;
 
         }
 
