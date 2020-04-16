@@ -24,9 +24,9 @@ namespace fhir_integration
             Transformer transformer = new Transformer(connector);
 
             connector.initFhirConnection();
-             
+            connector.testUploadPractitioner();
             transformer.ConnectDB("abuelo.ictm.albertov.cz", "test", "test", "test");
-            transformer.getUnsyncedData();
+            transformer.getUnsyncedData(); // foreach in unsyncedData - parse Patient, Performer, core data - parse Observation, send it to FHIR server, log it in DB if synced
             transformer.parsePatient(11);
 
             Console.ReadKey();

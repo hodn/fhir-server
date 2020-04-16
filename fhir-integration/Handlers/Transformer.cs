@@ -64,7 +64,7 @@ namespace fhir_integration
             return unsyncedData;
         }
 
-        public void parsePatient(int userId)
+        public Dictionary<string, string> parsePatient(int userId)
         {
             // Finds FHIR ID, first name, last name - USERS table
             // Finds national Identification number - Patients table
@@ -92,23 +92,30 @@ namespace fhir_integration
                     string nationalIdentificationNumber = row["nationalIdentificationNumber"].ToString();
                     nationalIdentificationNumber = Regex.Replace(nationalIdentificationNumber, @"[^\d]", "");
                     patient.Add("nationalIdentificationNumber", nationalIdentificationNumber);
+                    patient.Add("assignedDoctor", row["assignedDoctor"].ToString());
                 }
 
                 foreach (DataRow row in resultUser.Rows)
                 {
-                    if (row["fhirId"] == DBNull.Value) connector.getFhirId(patient["nationalIdentificationNumber"]);
+                    if (row["fhirId"] == DBNull.Value) {
+                        patient.Add("fhirId", connector.getFhirId(patient["nationalIdentificationNumber"]));
+                    };
 
                     patient.Add("firstName", row["firstName"].ToString());
                     patient.Add("lastName", row["lastName"].ToString());
 
                 }
             }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
             finally
             {
                 connection.Close();
             }
 
-            
+            return patient;
 
         }
 
@@ -122,6 +129,16 @@ namespace fhir_integration
         }
 
         public void parseObservation()
+        {
+            // Patient, practitioner and data from BloodPressure Measurements
+        }
+
+        public void tagAsSynced()
+        {
+
+        }
+
+        public void updateFhirId()
         {
 
         }
