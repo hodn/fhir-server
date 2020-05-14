@@ -22,20 +22,19 @@ namespace fhir_integration
         }
 
         // Building connection string for DB
-        public void ConnectDB(string dataSource, string userId, string pass, string catalog)
+        public void ConnectDB()
         {
             try
             {
                 SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
-                builder.DataSource = dataSource;
-                builder.UserID = userId;
-                builder.Password = pass;
-                builder.InitialCatalog = catalog;
+                builder.DataSource = config.db;
+                builder.UserID = config.dbUserId;
+                builder.Password = config.dbPassword;
+                builder.InitialCatalog = config.dbCatalog;
 
                 SqlConnection conn = new SqlConnection(builder.ConnectionString);
                 
                 connection = conn;
-
             }
             catch (Exception e)
             {

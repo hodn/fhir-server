@@ -25,7 +25,7 @@ namespace fhir_integration
             Transformer transformer = new Transformer(connector, config);
 
             connector.initFhirConnection();
-            transformer.ConnectDB("abuelo.ictm.albertov.cz", "test", "test", "test");
+            transformer.ConnectDB();
 
             var unsyncedData = transformer.getUnsyncedData();
 
