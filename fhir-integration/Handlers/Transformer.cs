@@ -80,6 +80,7 @@ namespace fhir_integration
                 if (userRecord.fhirId == null)
                 {
                     string fhirId = connector.getFhirId(patient["nationalIdentificationNumber"]);
+                    if (fhirId == null) return null;
                     patient.Add("fhirId", fhirId);
                     UpdateFhirId(fhirId, userId);
                 }
@@ -106,21 +107,33 @@ namespace fhir_integration
             return null;
         }
 
-        public void TagAsSynced(int measurementId)
+        // Tags as synced in app DB
+        public bool TagAsSynced(int measurementId)
         {
-
-            using (Model1 context = new Model1(connection.ConnectionString))
+            if (measurementId != 0)
             {
-                var measurement = context.BloodPressureMeasurements
-                    .Where(m => m.measurementId == measurementId)
-                    .First();
+                using (Model1 context = new Model1(connection.ConnectionString))
+                {
+                    var measurement = context.BloodPressureMeasurements
+                        .Where(m => m.measurementId == measurementId)
+                        .First();
 
-                measurement.fhirSynced = 1;
+                    measurement.fhirSynced = 1;
 
-                context.SaveChanges();
+                    context.SaveChanges();
+                    Console.WriteLine("Measurement synced - ID: " + measurementId.ToString());
+                    return true;
+                }
             }
+            else
+            {
+                Console.WriteLine("Skipping the measurement");
+                return false;
+            }
+           
         }
 
+        // Updates matched FHIR ID in app DB
         public void UpdateFhirId(string fhirId, int userId)
         {
 
@@ -135,7 +148,46 @@ namespace fhir_integration
             }
 
         }
+
+        public void Sync()
+        {
+
+            Console.WriteLine(" \n Sync start - " +  DateTime.Now.ToString());
+            config.AddLog("Sync start");
+            var unsyncedData = GetUnsyncedData();
+            Console.WriteLine("Unsynced measurements count: " + unsyncedData.Count);
+            string measurementIds = "";
+            int successCount = 0;
+
+            foreach (BloodPressureMeasurements record in unsyncedData)
+            {
+                int userId = record.patientId;
+                Dictionary<string, string> patient = ParsePatient(userId);
+
+                int savedMeasurementId = connector.SaveFhirObservation(patient, record);
+                bool success = TagAsSynced(savedMeasurementId);
+                if (success)
+                {
+                    measurementIds += savedMeasurementId.ToString() + " ";
+                    successCount++;
+                }
+
+            }
+
+            Console.WriteLine("Synced measurements count: " + successCount.ToString());
+            Console.WriteLine("Synced measurements: " + measurementIds);
+
+            config.AddLog("Synced " + successCount.ToString() + " - " + measurementIds);
+
+            Console.WriteLine("Sync end - " + DateTime.Now.ToString());
+            config.AddLog("Sync end" );
+
+            Console.WriteLine("\n");
+
+        }
     }
+
+
         
 
 }

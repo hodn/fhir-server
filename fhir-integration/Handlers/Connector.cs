@@ -27,80 +27,70 @@ namespace fhir_integration
 
         public int SaveFhirObservation(Dictionary<string, string> patient, BloodPressureMeasurements measurement)
         {
+            if (patient == null) return 0;
 
-            try
-            {
-                int measurementId = measurement.measurementId;
-                var obs = new Observation();
+            int measurementId = measurement.measurementId;
+            var obs = new Observation();
 
-                var id = new Identifier();
-                id.System = config.fhirServer;
-                id.Value = measurementId.ToString();
-                obs.Identifier.Add(id);
+            var id = new Identifier();
+            id.System = config.fhirServer;
+            id.Value = measurementId.ToString();
+            obs.Identifier.Add(id);
 
-                obs.Status = Observation.ObservationStatus.Final;
+            obs.Status = Observation.ObservationStatus.Final;
 
-                var cat = new CodeableConcept("http://terminology.hl7.org/CodeSystem/observation-category", "vital-signs");
-                obs.Category = cat;
+            var cat = new CodeableConcept("http://terminology.hl7.org/CodeSystem/observation-category", "vital-signs");
+            obs.Category = cat;
 
-                var type = new CodeableConcept("", "LOINC 85354-9");
-                obs.Code = type;
+            var type = new CodeableConcept("", "LOINC 85354-9");
+            obs.Code = type;
 
-                DateTime convertedDate = DateTime.Parse(measurement.measurementTs.ToString());
-                obs.Effective = new FhirDateTime(convertedDate);
+            DateTime convertedDate = DateTime.Parse(measurement.measurementTs.ToString());
+            obs.Effective = new FhirDateTime(convertedDate);
 
-                var sub = new ResourceReference();
-                sub.Reference = (config.fhirServer + "/Patient/") + patient["fhirId"];
-                sub.Display = patient["nationalIdentificationNumber"] + " " + patient["lastName"] + " " + patient["firstName"];
-                obs.Subject = sub;
+            var sub = new ResourceReference();
+            sub.Reference = (config.fhirServer + "/Patient/") + patient["fhirId"];
+            sub.Display = patient["nationalIdentificationNumber"] + " " + patient["lastName"] + " " + patient["firstName"];
+            obs.Subject = sub;
 
-                var sys = new Observation.ComponentComponent();
-                sys.Code = new CodeableConcept("", "LOINC 8480-6", "Systolic blood pressure");
-                sys.Value = new FhirString(measurement.sysPressure.ToString());
-                obs.Component.Add(sys);
+            var sys = new Observation.ComponentComponent();
+            sys.Code = new CodeableConcept("", "LOINC 8480-6", "Systolic blood pressure");
+            sys.Value = new FhirString(measurement.sysPressure.ToString());
+            obs.Component.Add(sys);
 
-                var dia = new Observation.ComponentComponent();
-                dia.Code = new CodeableConcept("", "LOINC 8462-4", "Diastolic blood pressure'");
-                dia.Value = new FhirString(measurement.diaPressure.ToString());
-                obs.Component.Add(dia);
+            var dia = new Observation.ComponentComponent();
+            dia.Code = new CodeableConcept("", "LOINC 8462-4", "Diastolic blood pressure'");
+            dia.Value = new FhirString(measurement.diaPressure.ToString());
+            obs.Component.Add(dia);
 
-                var createdObs = client.Create(obs);
+            var createdObs = client.Create(obs);
 
-                return measurementId;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
-
-            return 0;
+            return measurementId;
 
         }
 
         public string getFhirId(string identifier)
         {
-            try
+
+            Bundle results = client.Search<Patient>(new string[] { "identifier:exact=" + identifier });
+            string fhirId = null;
+
+            if (results.Entry.Count == 0)
             {
-                Bundle results = client.Search<Patient>(new string[] { "identifier:exact=" + identifier });
-                string fhirId = null;
-
-                if(results.Entry.Count() == 0) return fhirId;
-
-                foreach (var e in results.Entry)
-                {
-                    var patient = (Patient)e.Resource;
-                    fhirId = patient.Id.ToString();
-                }
-
+                Console.WriteLine("No matching FHIR identity found for: " + identifier);
+                config.AddLog("No matching FHIR identity found for: " + identifier);
                 return fhirId;
             }
-            catch(Exception e)
+
+            foreach (var e in results.Entry)
             {
-                Console.WriteLine(e.Message);
-                return null;
+                var patient = (Patient)e.Resource;
+                fhirId = patient.Id.ToString();
             }
-            
+
+            return fhirId;
         }
+
 
         // Testing purposes
         public void testUploadPatient()
@@ -124,7 +114,7 @@ namespace fhir_integration
             mail.Rank = 2;
             pat.Telecom.Add(telecom);
             pat.Telecom.Add(mail);
-          
+
             pat.Gender = AdministrativeGender.Male;
 
             pat.BirthDate = "1987-05-10";
