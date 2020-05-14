@@ -1,4 +1,5 @@
-﻿using System;
+﻿using fhir_integration.Handlers;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -22,6 +23,7 @@ namespace fhir_integration
 
             Connector connector = new Connector(config);
             Transformer transformer = new Transformer(connector, config);
+            EmailHandler emailHandler = new EmailHandler(config.email);
 
             connector.InitFhirConnection(); // defined route to FHIR server
             transformer.InitDb(); // defined connection string to DB
@@ -52,7 +54,7 @@ namespace fhir_integration
                     transformer.errorCount = 0; // reset error count
                     syncInterval.Start(); // trigger normal interval
                     retryInterval.Stop(); // stop retry interval
-                    Console.WriteLine("Send email");
+                    emailHandler.Send("FHIR sync not available", "Dear Sir or Madam, \n \n the FHIR synchronization was not available during the last " + config.interval + " minutes. Please, check the service. \n Thank you for understanding. \n \n Your, FHIR Integrator");
                 }
                 else
                 {

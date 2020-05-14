@@ -165,6 +165,7 @@
     <Compile Include="DoctorView.cs" />
     <Compile Include="Handlers\Connector.cs" />
     <Compile Include="Handlers\ConfigurationHandler.cs" />
+    <Compile Include="Handlers\EmailHandler.cs" />
     <Compile Include="Insurances.cs" />
     <Compile Include="Model1.cs" />
     <Compile Include="PasswordResetRequests.cs" />
