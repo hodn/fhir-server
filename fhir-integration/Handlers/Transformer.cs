@@ -99,15 +99,6 @@ namespace fhir_integration
             }
 
         }
-        
-        public Dictionary<string, string> parsePractitioner(int userId)
-        {
-            // Finds FHIR ID, first name, last name - USERS table
-            // Finds national Identification number - Doctors table
-            // If FHIR ID is NULL -> getFHIR ID
-            // Returns FHIR ID, first name, last name, evidenceNumber
-            return null;
-        }
 
         // Tags as synced in app DB
         public bool TagAsSynced(int measurementId)
