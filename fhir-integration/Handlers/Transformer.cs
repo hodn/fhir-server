@@ -33,8 +33,9 @@ namespace fhir_integration
                 builder.InitialCatalog = config.dbCatalog;
 
                 SqlConnection conn = new SqlConnection(builder.ConnectionString);
-                
+
                 connection = conn;
+
             }
             catch (Exception e)
             {
@@ -43,82 +44,56 @@ namespace fhir_integration
         }
 
         // Finds unsynced BloodPressureMeasurements in DB
-        public DataTable getUnsyncedData()
+        public List<BloodPressureMeasurements> getUnsyncedData()
         {
-            DataTable unsyncedData = new DataTable();
-            string queryString = "SELECT * FROM BloodPressureMeasurements WHERE isDeleted=0 AND fhirSynced=0";
-            SqlCommand command = new SqlCommand(queryString, connection);
-
-            connection.Open();
-     
-            try
+            using (Model1 context = new Model1(connection.ConnectionString))
             {
-                SqlDataAdapter da = new SqlDataAdapter(command);
-                da.Fill(unsyncedData);
-                da.Dispose();
+                var unsyncedData = context.BloodPressureMeasurements
+                    .Where(m => m.fhirSynced == 0 && m.isDeleted == 0)
+                    .ToList();
+                return unsyncedData;
             }
-            finally
-            {
-                connection.Close();
-            }
-
-            return unsyncedData;
         }
 
         // Finds all info about patient upon ID from DB, if needed gets FHIR ID from FHIR server
         public Dictionary<string, string> parsePatient(int userId)
         {
-            var patient = new Dictionary<string, string>();
-            string queryStringUsers = "SELECT * FROM Users WHERE userId=" + userId.ToString();
-            string queryStringPatients = "SELECT * FROM Patients WHERE patientId=" + userId.ToString();
-            SqlCommand commandUsers = new SqlCommand(queryStringUsers, connection);
-            SqlCommand commandPatients = new SqlCommand(queryStringPatients, connection);
 
-            try
+            using (Model1 context = new Model1(connection.ConnectionString))
             {
-                connection.Open();
-                DataTable resultUser = new DataTable();
-                DataTable resultPatients = new DataTable();
-                SqlDataAdapter daUsers = new SqlDataAdapter(commandUsers);
-                SqlDataAdapter daPatients = new SqlDataAdapter(commandPatients);
-                daUsers.Fill(resultUser);
-                daPatients.Fill(resultPatients);
-                daUsers.Dispose();
-                daPatients.Dispose();
+                // Manual join - Views are broken
+                var patientRecord = context.Patients
+                    .Where(p => p.patientId == userId)
+                    .First();
 
-                foreach (DataRow row in resultPatients.Rows)
+                var userRecord = context.Users
+                   .Where(u => u.userId == userId)
+                   .First();
+
+                var patient = new Dictionary<string, string>();
+
+                string nationalIdentificationNumber = patientRecord.nationalIdentificationNumber.ToString();
+                nationalIdentificationNumber = Regex.Replace(nationalIdentificationNumber, @"[^\d]", "");
+                patient.Add("nationalIdentificationNumber", nationalIdentificationNumber);
+                patient.Add("assignedDoctorId", patientRecord.assignedDoctor.ToString());
+
+                if (userRecord.fhirId == null)
                 {
-                    string nationalIdentificationNumber = row["nationalIdentificationNumber"].ToString();
-                    nationalIdentificationNumber = Regex.Replace(nationalIdentificationNumber, @"[^\d]", "");
-                    patient.Add("nationalIdentificationNumber", nationalIdentificationNumber);
-                    patient.Add("assignedDoctorId", row["assignedDoctor"].ToString());
+                    string fhirId = connector.getFhirId(patient["nationalIdentificationNumber"]);
+                    patient.Add("fhirId", fhirId);
+                    updateFhirId(fhirId, userId);
+                }
+                else
+                {
+                    patient.Add("fhirId", userRecord.fhirId);
                 }
 
-                foreach (DataRow row in resultUser.Rows)
-                {
-                    if (row["fhirId"] == DBNull.Value) {
-                        string fhirId = connector.getFhirId(patient["nationalIdentificationNumber"]);
-                        patient.Add("fhirId", fhirId);
-                        updateFhirId(fhirId, userId);
-                    } else
-                    {
-                        patient.Add("fhirId", row["fhirId"].ToString());
-                    }
+                patient.Add("firstName", userRecord.firstName);
+                patient.Add("lastName", userRecord.lastName); 
 
-                    patient.Add("firstName", row["firstName"].ToString());
-                    patient.Add("lastName", row["lastName"].ToString());
-                }
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
-            finally
-            {
-                connection.Close();
-            }
+                return patient; // firstName, lastName, fhirId, assignedDoctorId, nationalIdentificationNumber
 
-            return patient; // firstName, lastName, fhirId, assignedDoctorId, nationalIdentificationNumber
+            }
 
         }
         

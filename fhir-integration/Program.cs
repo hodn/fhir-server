@@ -16,7 +16,7 @@ namespace fhir_integration
 
             Console.WriteLine("Enter configuration file path: ");
             string configPath = "C:/Users/Hoang/Desktop/test.xml";
-
+            
             ConfigurationHandler config = new ConfigurationHandler(configPath);
             config.LoadConfig();
             config.CreateLogFile();
@@ -29,12 +29,12 @@ namespace fhir_integration
 
             var unsyncedData = transformer.getUnsyncedData();
 
-            foreach (DataRow row in unsyncedData.Rows)
+            foreach (BloodPressureMeasurements record in unsyncedData)
             {
-                int userId = int.Parse(row["patientId"].ToString());
+                int userId = record.patientId;
                 Dictionary<string, string> patient = transformer.parsePatient(userId);
-                int savedMeasurementId = connector.SaveFhirObservation(patient, row);
-                transformer.tagAsSynced(savedMeasurementId);
+                //int savedMeasurementId = connector.SaveFhirObservation(patient, row);
+                //transformer.tagAsSynced(savedMeasurementId);
             }
             
 
