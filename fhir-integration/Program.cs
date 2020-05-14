@@ -28,8 +28,11 @@ namespace fhir_integration
             connector.InitFhirConnection(); // defined route to FHIR server
             transformer.InitDb(); // defined connection string to DB
 
-            Timer syncInterval = new Timer(30000); // normal interval
-            Timer retryInterval = new Timer(5000); // retry interval
+            int intervalToMillis = config.interval * 60 * 1000;
+            int retryIntervalToMillis = config.retryInterval * 60 * 1000;
+
+            Timer syncInterval = new Timer(intervalToMillis); // normal interval
+            Timer retryInterval = new Timer(retryIntervalToMillis); // retry interval
             syncInterval.Elapsed += new ElapsedEventHandler(syncIntervalElapsed);
             retryInterval.Elapsed += new ElapsedEventHandler(syncIntervalElapsed);
 
@@ -49,7 +52,7 @@ namespace fhir_integration
             {
                
                 // If ran out of retries (reached normal interval) - send email and reset the interval
-                if (transformer.errorCount >= (30000 / 5000))
+                if (transformer.errorCount >= (config.interval / config.retryInterval))
                 {
                     transformer.errorCount = 0; // reset error count
                     syncInterval.Start(); // trigger normal interval
