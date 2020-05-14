@@ -24,17 +24,17 @@ namespace fhir_integration
             Connector connector = new Connector(config);
             Transformer transformer = new Transformer(connector, config);
 
-            connector.initFhirConnection();
+            connector.InitFhirConnection();
             transformer.ConnectDB();
 
-            var unsyncedData = transformer.getUnsyncedData();
+            var unsyncedData = transformer.GetUnsyncedData();
 
             foreach (BloodPressureMeasurements record in unsyncedData)
             {
                 int userId = record.patientId;
-                Dictionary<string, string> patient = transformer.parsePatient(userId);
-                //int savedMeasurementId = connector.SaveFhirObservation(patient, row);
-                //transformer.tagAsSynced(savedMeasurementId);
+                Dictionary<string, string> patient = transformer.ParsePatient(userId);
+                int savedMeasurementId = connector.SaveFhirObservation(patient, record);
+                transformer.TagAsSynced(savedMeasurementId);
             }
             
 

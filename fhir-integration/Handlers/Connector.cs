@@ -20,17 +20,17 @@ namespace fhir_integration
             this.config = config;
         }
 
-        public void initFhirConnection()
+        public void InitFhirConnection()
         {
             client = new FhirClient(config.fhirServer);
         }
 
-        public int SaveFhirObservation(Dictionary<string, string> patient, DataRow measurement)
+        public int SaveFhirObservation(Dictionary<string, string> patient, BloodPressureMeasurements measurement)
         {
 
             try
             {
-                int measurementId = int.Parse(measurement["measurementId"].ToString());
+                int measurementId = measurement.measurementId;
                 var obs = new Observation();
 
                 var id = new Identifier();
@@ -46,7 +46,7 @@ namespace fhir_integration
                 var type = new CodeableConcept("", "LOINC 85354-9");
                 obs.Code = type;
 
-                DateTime convertedDate = DateTime.Parse(measurement["measurementTs"].ToString());
+                DateTime convertedDate = DateTime.Parse(measurement.measurementTs.ToString());
                 obs.Effective = new FhirDateTime(convertedDate);
 
                 var sub = new ResourceReference();
@@ -56,12 +56,12 @@ namespace fhir_integration
 
                 var sys = new Observation.ComponentComponent();
                 sys.Code = new CodeableConcept("", "LOINC 8480-6", "Systolic blood pressure");
-                sys.Value = new FhirString(measurement["sysPressure"].ToString());
+                sys.Value = new FhirString(measurement.sysPressure.ToString());
                 obs.Component.Add(sys);
 
                 var dia = new Observation.ComponentComponent();
                 dia.Code = new CodeableConcept("", "LOINC 8462-4", "Diastolic blood pressure'");
-                dia.Value = new FhirString(measurement["diaPressure"].ToString());
+                dia.Value = new FhirString(measurement.diaPressure.ToString());
                 obs.Component.Add(dia);
 
                 var createdObs = client.Create(obs);

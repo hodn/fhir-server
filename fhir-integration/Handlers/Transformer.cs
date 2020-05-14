@@ -44,7 +44,7 @@ namespace fhir_integration
         }
 
         // Finds unsynced BloodPressureMeasurements in DB
-        public List<BloodPressureMeasurements> getUnsyncedData()
+        public List<BloodPressureMeasurements> GetUnsyncedData()
         {
             using (Model1 context = new Model1(connection.ConnectionString))
             {
@@ -56,7 +56,7 @@ namespace fhir_integration
         }
 
         // Finds all info about patient upon ID from DB, if needed gets FHIR ID from FHIR server
-        public Dictionary<string, string> parsePatient(int userId)
+        public Dictionary<string, string> ParsePatient(int userId)
         {
 
             using (Model1 context = new Model1(connection.ConnectionString))
@@ -106,25 +106,18 @@ namespace fhir_integration
             return null;
         }
 
-        public void tagAsSynced(int measurementId)
+        public void TagAsSynced(int measurementId)
         {
-            try
+
+            using (Model1 context = new Model1(connection.ConnectionString))
             {
-                connection.Open();
-                string query = "UPDATE BloodPressureMeasurements SET fhirSynced=1 WHERE measurementId=@measurementId";
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@measurementId", measurementId);
-                    command.ExecuteNonQuery();
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
-            finally
-            {
-                connection.Close();
+                var measurement = context.BloodPressureMeasurements
+                    .Where(m => m.measurementId == measurementId)
+                    .First();
+
+                measurement.fhirSynced = 1;
+
+                context.SaveChanges();
             }
         }
 
