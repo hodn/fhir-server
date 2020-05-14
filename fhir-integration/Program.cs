@@ -17,45 +17,66 @@ namespace fhir_integration
             string configPath = "C:/Users/Hoang/Desktop/test.xml";
 
             ConfigurationHandler config = new ConfigurationHandler(configPath);
+            config.LoadConfig(); // Loads settings
+            config.CreateLogFile(); // Create log file in chosen directory
 
+            Connector connector = new Connector(config);
+            Transformer transformer = new Transformer(connector, config);
 
-            try
-            {   
+            connector.InitFhirConnection(); // defined route to FHIR server
+            transformer.InitDb(); // defined connection string to DB
 
-                config.LoadConfig();
-                config.CreateLogFile();
+            Timer syncInterval = new Timer(30000); // normal interval
+            Timer retryInterval = new Timer(5000); // retry interval
+            syncInterval.Elapsed += new ElapsedEventHandler(syncIntervalElapsed);
+            retryInterval.Elapsed += new ElapsedEventHandler(syncIntervalElapsed);
 
-                Connector connector = new Connector(config);
-                Transformer transformer = new Transformer(connector, config);
+            void syncIntervalElapsed(object sender, ElapsedEventArgs e)
+            {
+                Run(); // triggered by timer
+            }
 
-                connector.InitFhirConnection();
-                transformer.ConnectDB();
+            Console.WriteLine("Database and FHIR server connection initialized \n");
 
-                Timer syncInterval = new Timer(1000 * 60 * config.interval);
-                syncInterval.Elapsed += new ElapsedEventHandler(syncIntervalElapsed);
-                Timer retryInterval = new Timer(1000 * 60 * config.retryInterval);
-                retryInterval.Elapsed += new ElapsedEventHandler(syncIntervalElapsed);
+            Console.WriteLine("Press any key to run the initial FHIR sync");
+            Console.ReadKey();
 
-                void syncIntervalElapsed(object sender, ElapsedEventArgs e)
+            Run(); // Inital sync 
+
+            void Run()
+            {
+               
+                // If ran out of retries (reached normal interval) - send email and reset the interval
+                if (transformer.errorCount >= (30000 / 5000))
                 {
-                    transformer.Sync();
+                    transformer.errorCount = 0; // reset error count
+                    syncInterval.Start(); // trigger normal interval
+                    retryInterval.Stop(); // stop retry interval
+                    Console.WriteLine("Send email");
+                }
+                else
+                {
+                    try
+                    {
+                        transformer.Sync();
+                        syncInterval.Start(); // trigger normal interval
+                        retryInterval.Stop(); // stop retry interval
+                        transformer.errorCount = 0; // reset error count
+                    }
+                    catch (Exception e)
+                    {
+                        config.AddLog(e.Message); // Log to file
+                        Console.WriteLine(e.Message);
+                        syncInterval.Stop(); // stop normal interval
+                        retryInterval.Start(); // trigger retry interval
+                        transformer.errorCount++;
+                    }
                 }
 
-                Console.WriteLine("Database and FHIR server connection initialized \n");
-
-                Console.WriteLine("Press any key to run the initial FHIR sync");
-                Console.ReadKey();
-
-                transformer.Sync();
-                syncInterval.Start();
-
-
+               
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-                config.AddLog(e.Message);
-            }
+                 
+
 
             Console.ReadKey();
         }

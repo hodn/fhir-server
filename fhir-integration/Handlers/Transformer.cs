@@ -14,15 +14,17 @@ namespace fhir_integration
         private SqlConnection connection { get; set; }
         private Connector connector { get; set; }
         private ConfigurationHandler config { get; set; }
+        public int errorCount { get; set; }
 
         public Transformer(Connector connector, ConfigurationHandler config)
         {
             this.connector = connector;
             this.config = config;
+            errorCount = 0;
         }
 
         // Building connection string for DB
-        public void ConnectDB()
+        public void InitDb()
         {
             try
             {
@@ -149,6 +151,7 @@ namespace fhir_integration
 
         }
 
+        // Synchronize data
         public void Sync()
         {
 
