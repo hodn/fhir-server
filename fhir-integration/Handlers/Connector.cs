@@ -59,9 +59,14 @@ namespace fhir_integration
             obs.Component.Add(sys);
 
             var dia = new Observation.ComponentComponent();
-            dia.Code = new CodeableConcept("", "LOINC 8462-4", "Diastolic blood pressure'");
+            dia.Code = new CodeableConcept("", "LOINC 8462-4", "Diastolic blood pressure");
             dia.Value = new FhirString(measurement.diaPressure.ToString());
             obs.Component.Add(dia);
+
+            var hr = new Observation.ComponentComponent();
+            hr.Code = new CodeableConcept("", "LOINC 8867-4", "Heart rate");
+            hr.Value = new FhirString(measurement.heartRate.ToString());
+            obs.Component.Add(hr);
 
             var createdObs = client.Create(obs);
 

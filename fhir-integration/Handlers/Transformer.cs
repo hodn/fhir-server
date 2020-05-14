@@ -178,7 +178,7 @@ namespace fhir_integration
             }
 
             Console.WriteLine("Synced measurements count: " + successCount.ToString());
-            Console.WriteLine("Synced measurements: " + measurementIds);
+            Console.WriteLine("Synced measurements - IDs: " + measurementIds);
 
             config.AddLog("Synced " + successCount.ToString() + " - " + measurementIds);
 
