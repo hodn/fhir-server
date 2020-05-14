@@ -28,13 +28,16 @@ namespace fhir_integration
             transformer.ConnectDB();
 
             var unsyncedData = transformer.GetUnsyncedData();
+            Console.WriteLine("Searched unsynced blood pressure measurements.");
 
             foreach (BloodPressureMeasurements record in unsyncedData)
             {
                 int userId = record.patientId;
                 Dictionary<string, string> patient = transformer.ParsePatient(userId);
                 int savedMeasurementId = connector.SaveFhirObservation(patient, record);
+                Console.WriteLine("Measurement saved to FHIR server. ID: " + savedMeasurementId);
                 transformer.TagAsSynced(savedMeasurementId);
+                Console.WriteLine("Measurement tagged as synced in DB.");
             }
             
 

@@ -81,7 +81,7 @@ namespace fhir_integration
                 {
                     string fhirId = connector.getFhirId(patient["nationalIdentificationNumber"]);
                     patient.Add("fhirId", fhirId);
-                    updateFhirId(fhirId, userId);
+                    UpdateFhirId(fhirId, userId);
                 }
                 else
                 {
@@ -121,28 +121,19 @@ namespace fhir_integration
             }
         }
 
-        public void updateFhirId(string fhirId, int userId)
+        public void UpdateFhirId(string fhirId, int userId)
         {
-            try
+
+            using (Model1 context = new Model1(connection.ConnectionString))
             {
-                connection.Open();
-                string query = "UPDATE Users SET fhirId=@fhirId WHERE userId=@userId";
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@userId", userId);
-                    command.Parameters.AddWithValue("@fhirId", fhirId);
-                    command.ExecuteNonQuery();
-                }
+                var userWithoutFhirId = context.Users
+                    .Where(u => u.userId == userId)
+                    .First();
+
+                userWithoutFhirId.fhirId = fhirId;
+                context.SaveChanges();
             }
-            catch(Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
-            finally
-            {
-                connection.Close();
-            }
-            
+
         }
     }
         
