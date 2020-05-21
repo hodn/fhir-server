@@ -74,7 +74,7 @@ namespace fhir_integration
 
         }
 
-        public string getFhirId(string identifier)
+        public string GetFhirId(string identifier)
         {
 
             Bundle results = client.Search<Patient>(new string[] { "identifier:exact=" + identifier });
@@ -98,7 +98,7 @@ namespace fhir_integration
 
 
         // Testing purposes
-        public void testUploadPatient()
+        public void TestUploadPatient()
         {
             var pat = new Patient();
             pat.Active = true;
@@ -136,7 +136,7 @@ namespace fhir_integration
             var created_pat = client.Create(pat);
         }
 
-        public void testUploadPractitioner()
+        public void TestUploadPractitioner()
         {
             var pat = new Practitioner();
             pat.Active = true;
@@ -162,7 +162,7 @@ namespace fhir_integration
             Console.WriteLine("Doktor");
         }
 
-        public void update()
+        public void Update()
         {
 
             var pat_A = client.Read<Patient>("Patient/3");

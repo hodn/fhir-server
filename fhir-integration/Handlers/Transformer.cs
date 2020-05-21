@@ -75,7 +75,7 @@ namespace fhir_integration
 
                 if (userRecord.fhirId == null)
                 {
-                    string fhirId = connector.getFhirId(patient["nationalIdentificationNumber"]);
+                    string fhirId = connector.GetFhirId(patient["nationalIdentificationNumber"]);
                     if (fhirId == null) return null;
                     patient.Add("fhirId", fhirId);
                     UpdateFhirId(fhirId, userId);
