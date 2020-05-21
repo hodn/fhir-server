@@ -61,8 +61,6 @@ namespace fhir_integration
                 Run(); // triggered by timer
             }
 
-            Console.WriteLine("Database and FHIR server connection initialized \n");
-
             Console.WriteLine("Press any key to run the initial FHIR sync");
             Console.ReadKey();
 
