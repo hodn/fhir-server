@@ -23,20 +23,13 @@ namespace fhir_integration
         public string dbPassword { get; set; }
         public string fhirServer { get; set; }
 
-
-        public ConfigurationHandler(string configPath)
-        {
-            this.configPath = configPath;
-        }
-
-
         // Loading configuration from XML file
         public void LoadConfig()
         {
             try
             {
                 XmlDocument configDoc = new XmlDocument();
-                configDoc.Load(configPath);
+                configDoc.Load(@"config.xml");
 
                 XmlNodeList xnList = configDoc.GetElementsByTagName("config");
 

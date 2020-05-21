@@ -12,12 +12,9 @@ namespace fhir_integration
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("FHIR Integrator \n");
+            Console.WriteLine("FHIR Integrator");
 
-            Console.WriteLine("Enter configuration file path: ");
-            string configPath = Console.ReadLine();
-
-            ConfigurationHandler config = new ConfigurationHandler(configPath);
+            ConfigurationHandler config = new ConfigurationHandler();
 
             try
             {
