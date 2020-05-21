@@ -90,7 +90,8 @@ namespace fhir_integration
             try
             {
                 DateTime time = DateTime.Now;
-                string fileName = "/FHIR_Logs_" + time.ToString("d") + ".txt";
+                string[] timestamp = time.ToString("s").Split('T');
+                string fileName = "/FHIR_Logs_" + timestamp[0] + ".txt";
                 logPath = Path.Combine(logDirectory + fileName);
 
                 if (!File.Exists(logPath))
