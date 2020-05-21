@@ -26,23 +26,17 @@ namespace fhir_integration
         // Building connection string for DB
         public void InitDb()
         {
-            try
-            {
-                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
-                builder.DataSource = config.db;
-                builder.UserID = config.dbUserId;
-                builder.Password = config.dbPassword;
-                builder.InitialCatalog = config.dbCatalog;
 
-                SqlConnection conn = new SqlConnection(builder.ConnectionString);
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder();
+            builder.DataSource = config.db;
+            builder.UserID = config.dbUserId;
+            builder.Password = config.dbPassword;
+            builder.InitialCatalog = config.dbCatalog;
 
-                connection = conn;
+            SqlConnection conn = new SqlConnection(builder.ConnectionString);
 
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
+            connection = conn;
+
         }
 
         // Finds unsynced BloodPressureMeasurements in DB
@@ -92,7 +86,7 @@ namespace fhir_integration
                 }
 
                 patient.Add("firstName", userRecord.firstName);
-                patient.Add("lastName", userRecord.lastName); 
+                patient.Add("lastName", userRecord.lastName);
 
                 return patient; // firstName, lastName, fhirId, assignedDoctorId, nationalIdentificationNumber
 
@@ -123,7 +117,7 @@ namespace fhir_integration
                 Console.WriteLine("Skipping the measurement");
                 return false;
             }
-           
+
         }
 
         // Updates matched FHIR ID in app DB
@@ -146,7 +140,7 @@ namespace fhir_integration
         public void Sync()
         {
 
-            Console.WriteLine(" \n Sync start - " +  DateTime.Now.ToString());
+            Console.WriteLine(" \n Sync start - " + DateTime.Now.ToString());
             config.AddLog("Sync start");
             var unsyncedData = GetUnsyncedData();
             Console.WriteLine("Unsynced measurements count: " + unsyncedData.Count);
@@ -171,10 +165,10 @@ namespace fhir_integration
             Console.WriteLine("Synced measurements count: " + successCount.ToString());
             Console.WriteLine("Synced measurements - IDs: " + measurementIds);
 
-            config.AddLog("Synced " + successCount.ToString() + " - " + measurementIds);
+            config.AddLog("Synced measurements: " + successCount.ToString() + " - IDs: " + measurementIds);
 
             Console.WriteLine("Sync end - " + DateTime.Now.ToString());
-            config.AddLog("Sync end" );
+            config.AddLog("Sync end");
 
             Console.WriteLine("\n");
 
@@ -182,6 +176,6 @@ namespace fhir_integration
     }
 
 
-        
+
 
 }

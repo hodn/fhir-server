@@ -15,19 +15,39 @@ namespace fhir_integration
             Console.WriteLine("FHIR Integrator \n");
 
             Console.WriteLine("Enter configuration file path: ");
-            string configPath = "C:/Users/Hoang/Desktop/test.xml";
+            string configPath = Console.ReadLine();
 
             ConfigurationHandler config = new ConfigurationHandler(configPath);
-            config.LoadConfig(); // Loads settings
-            config.CreateLogFile(); // Create log file in chosen directory
+
+            try
+            {
+                config.LoadConfig(); // Loads settings
+                config.CreateLogFile(); // Create log file in chosen directory
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Application not configured: " + e.Message);
+                config.AddLog(e.Message);
+            }
+            
 
             Connector connector = new Connector(config);
             Transformer transformer = new Transformer(connector, config);
             EmailHandler emailHandler = new EmailHandler(config.email);
 
-            connector.InitFhirConnection(); // defined route to FHIR server
-            transformer.InitDb(); // defined connection string to DB
-
+            try
+            {
+                connector.InitFhirConnection(); // defined route to FHIR server
+                transformer.InitDb(); // defined connection string to DB
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Database or FHIR server not connected: " + e.Message);
+                config.AddLog(e.Message);
+            }
+           
+                
             int intervalToMillis = config.interval * 60 * 1000;
             int retryIntervalToMillis = config.retryInterval * 60 * 1000;
 
@@ -50,7 +70,6 @@ namespace fhir_integration
 
             void Run()
             {
-               
                 // If ran out of retries (reached normal interval) - send email and reset the interval
                 if (transformer.errorCount >= (config.interval / config.retryInterval))
                 {
@@ -58,6 +77,8 @@ namespace fhir_integration
                     syncInterval.Start(); // trigger normal interval
                     retryInterval.Stop(); // stop retry interval
                     emailHandler.Send("FHIR sync not available", "Dear Sir or Madam, \n \n the FHIR synchronization was not available during the last " + config.interval + " minutes. Please, check the service. \n Thank you for understanding. \n \n Your, FHIR Integrator");
+                    config.AddLog("Service not available for " + config.interval.ToString() + " mins." + " Sent notification email to: " + config.email);
+                    Console.WriteLine("Sent notification email to: " + config.email);
                 }
                 else
                 {
