@@ -43,8 +43,7 @@ namespace fhir_integration
                 Console.WriteLine("Database or FHIR server not connected: " + e.Message);
                 config.AddLog(e.Message);
             }
-
-
+            
             int intervalToMillis = config.interval * 60 * 1000;
             int retryIntervalToMillis = config.retryInterval * 60 * 1000;
 

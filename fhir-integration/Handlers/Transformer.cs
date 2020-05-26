@@ -178,6 +178,27 @@ namespace fhir_integration
             Console.WriteLine("\n");
 
         }
+
+        // Test purposes
+        public void ResetDbSynced()
+        {
+
+            using (Model1 context = new Model1(connection.ConnectionString))
+            {
+                var measurements = context.BloodPressureMeasurements.ToList();
+
+                foreach (var m in measurements)
+                {
+                    m.fhirSynced = 0;
+                }
+
+                context.SaveChanges();
+                
+            }
+
+
+
+        }
     }
 
 

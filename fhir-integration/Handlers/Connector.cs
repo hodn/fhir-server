@@ -162,7 +162,7 @@ namespace fhir_integration
             Console.WriteLine("Doktor");
         }
 
-        public void Update()
+        public void AssignPractitioner()
         {
 
             var pat_A = client.Read<Patient>("Patient/3");
@@ -173,5 +173,15 @@ namespace fhir_integration
             var updated_pat = client.Update(pat_A);
 
         }
+
+        public void DeleteObs()
+        {
+
+            var conditions = new SearchParams();
+            conditions.Add("status", "final");
+            client.Delete("Observation", conditions);
+
+        }
     }
+
 }
