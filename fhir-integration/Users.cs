@@ -40,7 +40,6 @@ namespace fhir_integration
 
         public byte isAdmin { get; set; }
 
-        [Required]
         [StringLength(50)]
         public string token { get; set; }
 

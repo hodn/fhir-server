@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Entity.Infrastructure;
+using System.Data.Entity.Validation;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
@@ -79,6 +81,8 @@ namespace fhir_integration
                     if (fhirId == null) return null;
                     patient.Add("fhirId", fhirId);
                     UpdateFhirId(fhirId, userId);
+                    config.AddLog("Patient: " + patient["nationalIdentificationNumber"] + " - FHIR ID found and saved.");
+                    Console.WriteLine("Patient: " + patient["nationalIdentificationNumber"] + " - FHIR ID found and saved.");
                 }
                 else
                 {
@@ -123,15 +127,16 @@ namespace fhir_integration
         // Updates matched FHIR ID in app DB
         public void UpdateFhirId(string fhirId, int userId)
         {
-
             using (Model1 context = new Model1(connection.ConnectionString))
             {
+
                 var userWithoutFhirId = context.Users
                     .Where(u => u.userId == userId)
                     .First();
 
                 userWithoutFhirId.fhirId = fhirId;
                 context.SaveChanges();
+
             }
 
         }

@@ -92,7 +92,7 @@ namespace fhir_integration
                 var patient = (Patient)e.Resource;
                 fhirId = patient.Id.ToString();
             }
-
+           
             return fhirId;
         }
 
