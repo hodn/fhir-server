@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
@@ -74,16 +75,21 @@ namespace fhir_integration
 
         }
 
-        public string GetFhirId(string identifier)
+        public string GetFhirId(string identifier, Patients patientRecord, Users userRecord, Cities city)
         {
 
             Bundle results = client.Search<Patient>(new string[] { "identifier:exact=" + identifier });
             string fhirId = null;
 
-            if (results.Entry.Count == 0)
+            if (results.Entry.Count == 0) // No matching FHIR entity
             {
-                Console.WriteLine("No matching FHIR identity found for: " + identifier);
-                config.AddLog("No matching FHIR identity found for: " + identifier);
+                // Create a new FHIR identity
+                // return fhir ID
+
+                fhirId = UploadFhirPatient(patientRecord, userRecord, city);
+
+                Console.WriteLine("Patient: " + identifier + " - FHIR entity created: " + fhirId);
+                config.AddLog("Patient: " + identifier + " - FHIR entity created: " + fhirId);
                 return fhirId;
             }
 
@@ -98,7 +104,70 @@ namespace fhir_integration
 
 
         // Testing purposes
-        public void UploadFhirPatient()
+        public string UploadFhirPatient(Patients patientRecord, Users userRecord, Cities city)
+        {
+            var pat = new Patient();
+            pat.Active = true;
+
+            var id = new Identifier();
+            id.System = "http://ciselniky.dasta.mzcr.cz/CD_DS4/hypertext/DSBET.htm";
+            string rawIdentifier = patientRecord.nationalIdentificationNumber;
+            id.Value = Regex.Replace(rawIdentifier, @"[^\d]", ""); ;
+            pat.Identifier.Add(id);
+
+            var name = new HumanName().WithGiven(userRecord.firstName).AndFamily(userRecord.lastName);
+            name.Use = HumanName.NameUse.Official;
+            pat.Name.Add(name);
+
+            var mail = new ContactPoint(ContactPoint.ContactPointSystem.Email, ContactPoint.ContactPointUse.Mobile, userRecord.email);
+            mail.Rank = 1;
+            pat.Telecom.Add(mail);
+
+            pat.Gender = patientRecord.sex == 1 ? AdministrativeGender.Male : AdministrativeGender.Female;
+
+            pat.BirthDate = patientRecord.birthDate.ToString("s", System.Globalization.CultureInfo.InvariantCulture);
+
+            var address = new Address()
+            {
+                Line = new string[] { patientRecord.address },
+                City = city.cityName,
+                PostalCode = city.zipCode,
+                Country = city.countryCode
+            };
+            pat.Address.Add(address);
+
+            var createdPat = client.Create(pat);
+
+            return createdPat.Id;
+        }
+
+        public void UploadFhirPractitioner()
+        {
+            var pat = new Practitioner();
+            pat.Active = true;
+
+            var id = new Identifier();
+            id.System = "https://www.lkcr.cz/seznam-lekaru-426.html";
+            id.Value = "1110905143";
+            pat.Identifier.Add(id);
+
+            var name = new HumanName().WithGiven("Miroslav").AndFamily("Milý");
+            name.Prefix = new string[] { "MuDr." };
+            name.Use = HumanName.NameUse.Official;
+            pat.Name = name;
+
+            pat.BirthDate = "1969-02-12";
+
+            var mail = new ContactPoint(ContactPoint.ContactPointSystem.Email, ContactPoint.ContactPointUse.Mobile, "miroslav.mily@posta.cz");
+            pat.Telecom.Add(mail);
+
+            pat.Gender = AdministrativeGender.Male;
+
+            var created_pat = client.Create(pat);
+            Console.WriteLine("Doktor");
+        }
+
+        public void UploadFhirPatientManual()
         {
             var pat = new Patient();
             pat.Active = true;
@@ -136,7 +205,7 @@ namespace fhir_integration
             var created_pat = client.Create(pat);
         }
 
-        public void UploadFhirPractitioner()
+        public void UploadFhirPractitionerManual()
         {
             var pat = new Practitioner();
             pat.Active = true;

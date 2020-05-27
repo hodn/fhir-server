@@ -70,19 +70,24 @@ namespace fhir_integration
 
                 var patient = new Dictionary<string, string>();
 
-                string nationalIdentificationNumber = patientRecord.nationalIdentificationNumber.ToString();
+                string nationalIdentificationNumber = patientRecord.nationalIdentificationNumber;
                 nationalIdentificationNumber = Regex.Replace(nationalIdentificationNumber, @"[^\d]", "");
                 patient.Add("nationalIdentificationNumber", nationalIdentificationNumber);
                 patient.Add("assignedDoctorId", patientRecord.assignedDoctor.ToString());
 
                 if (userRecord.fhirId == null)
                 {
-                    string fhirId = connector.GetFhirId(patient["nationalIdentificationNumber"]);
-                    if (fhirId == null) return null;
+                    var city = context.Cities
+                    .Where(c => c.cityId == patientRecord.cityId)
+                    .First();
+
+                    string fhirId = connector.GetFhirId(patient["nationalIdentificationNumber"], patientRecord, userRecord, city);
                     patient.Add("fhirId", fhirId);
                     UpdateFhirId(fhirId, userId);
-                    config.AddLog("Patient: " + patient["nationalIdentificationNumber"] + " - FHIR ID found and saved.");
-                    Console.WriteLine("Patient: " + patient["nationalIdentificationNumber"] + " - FHIR ID found and saved.");
+
+
+                    config.AddLog("Patient: " + patient["nationalIdentificationNumber"] + " - FHIR ID saved: " + fhirId);
+                    Console.WriteLine("Patient: " + patient["nationalIdentificationNumber"] + " - FHIR ID saved: " + fhirId);
                 }
                 else
                 {
