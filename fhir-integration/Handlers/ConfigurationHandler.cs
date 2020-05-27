@@ -38,7 +38,6 @@ namespace fhir_integration
                     interval = int.Parse(node["interval"].InnerText);
                     retryInterval = int.Parse(node["retryInterval"].InnerText);
                     email = node["email"].InnerText;
-                    logDirectory = node["logDirectory"].InnerText;
                     db = node["db"].InnerText;
                     dbUserId = node["dbUserId"].InnerText;
                     dbCatalog = node["dbCatalog"].InnerText;
@@ -57,7 +56,6 @@ namespace fhir_integration
                     Console.WriteLine("Interval: " + interval.ToString() + " mins");
                     Console.WriteLine("Recovery interval: " + retryInterval.ToString() + " mins");
                     Console.WriteLine("Notification email: " + email);
-                    Console.WriteLine("Log directory: " + logDirectory);
                     Console.WriteLine("\n");
                     Console.WriteLine("Database: " + db);
                     Console.WriteLine("Database user ID: " + dbUserId);
@@ -83,9 +81,12 @@ namespace fhir_integration
             try
             {
                 DateTime time = DateTime.Now;
-                string[] timestamp = time.ToString("s").Split('T');
-                string fileName = "/FHIR_Logs_" + timestamp[0] + ".txt";
-                logPath = Path.Combine(logDirectory + fileName);
+                string[] timestamp = time.ToString("s").Split('T'); // makes file name from date
+                string fileName = timestamp[0] + ".txt";
+                string logDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +  @"\FHIR_logs\"; // gets user data directory
+                Directory.CreateDirectory(logDirectory); // creates FHIR logs folder if it does not exist
+
+                logPath = Path.Combine(logDirectory + fileName); // combine directory and filename to write
 
                 if (!File.Exists(logPath))
                 {

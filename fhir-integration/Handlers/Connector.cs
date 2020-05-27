@@ -98,7 +98,7 @@ namespace fhir_integration
 
 
         // Testing purposes
-        public void TestUploadPatient()
+        public void UploadFhirPatient()
         {
             var pat = new Patient();
             pat.Active = true;
@@ -136,7 +136,7 @@ namespace fhir_integration
             var created_pat = client.Create(pat);
         }
 
-        public void TestUploadPractitioner()
+        public void UploadFhirPractitioner()
         {
             var pat = new Practitioner();
             pat.Active = true;
