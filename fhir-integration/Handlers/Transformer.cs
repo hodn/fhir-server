@@ -41,15 +41,134 @@ namespace fhir_integration
 
         }
 
-        // Finds unsynced BloodPressureMeasurements in DB
-        public List<BloodPressureMeasurements> GetUnsyncedData()
+        // Handles unsynced BloodPressureMeasurements in DB
+        public void HandleUnsyncedMeasurements()
         {
+            List<BloodPressureMeasurements> unsyncedMeasurements;
+
             using (Model1 context = new Model1(connection.ConnectionString))
             {
-                var unsyncedData = context.BloodPressureMeasurements
+                unsyncedMeasurements = context.BloodPressureMeasurements
                     .Where(m => m.fhirSynced == 0 && m.isDeleted == 0)
                     .ToList();
-                return unsyncedData;
+                
+            }
+
+            Console.WriteLine("Unsynced measurements count: " + unsyncedMeasurements.Count);
+            string measurementIds = "";
+            int successCount = 0;
+
+            foreach (BloodPressureMeasurements record in unsyncedMeasurements)
+            {
+                int userId = record.patientId;
+                Dictionary<string, string> patient = ParsePatient(userId);
+
+                int savedMeasurementId = connector.SaveFhirObservation(patient, record);
+                bool success = TagAsSynced(savedMeasurementId);
+                if (success)
+                {
+                    measurementIds += savedMeasurementId.ToString() + " ";
+                    successCount++;
+                }
+
+            }
+
+            Console.WriteLine("Synced measurements count: " + successCount.ToString());
+            Console.WriteLine("Synced measurements - IDs: " + measurementIds);
+
+            config.AddLog("Synced measurements: " + successCount.ToString() + " - IDs: " + measurementIds);
+        }
+
+        // Handle Patients in DB without FHIR id
+        public void HandlePatientsWithoutFhir()
+        {
+            List<Users> noFhirPatients;
+
+            using (Model1 context = new Model1(connection.ConnectionString))
+            {
+                noFhirPatients = context.Users
+                    .Where(u => u.fhirId == null && u.isDeleted == 0 && u.isDoctor == 0)
+                    .ToList();
+            }
+
+            if (noFhirPatients.Count > 0)
+            {
+                foreach (var p in noFhirPatients)
+                {
+
+                    using (Model1 context = new Model1(connection.ConnectionString))
+                    {
+                        // Manual join - Views are broken
+                        var patientRecord = context.Patients
+                            .Where(pat => pat.patientId == p.userId)
+                            .FirstOrDefault();
+
+                        if (patientRecord == null) continue; // not a patient, admin nor doctor 
+
+                        var userRecord = p;
+
+                        var city = context.Cities
+                        .Where(c => c.cityId == patientRecord.cityId)
+                        .FirstOrDefault();
+
+                        var doctorRecord = context.DoctorView
+                            .Where(doc => doc.doctorId == patientRecord.assignedDoctor)
+                            .FirstOrDefault();
+
+                        string fhirId = connector.GetPatientFhirId(patientRecord, userRecord, city, doctorRecord); // retrieves existing FHIR entity or creates new one
+
+                        UpdateFhirId(fhirId, p.userId);
+
+                        config.AddLog("Patient: " + patientRecord.nationalIdentificationNumber + " - FHIR ID saved: " + fhirId);
+                        Console.WriteLine("Patient: " + patientRecord.nationalIdentificationNumber + " - FHIR ID saved: " + fhirId);
+                    }
+
+                }
+            }
+
+            
+        }
+
+        // Handle Doctors in DB without FHIR id
+        public void HandleDoctorsWithoutFhir()
+        {
+            List<Users> noFhirDoctors;
+
+            using (Model1 context = new Model1(connection.ConnectionString))
+            {
+                noFhirDoctors = context.Users
+                    .Where(u => u.fhirId == null && u.isDeleted == 0 && u.isDoctor == 1)
+                    .ToList();
+            }
+
+            if (noFhirDoctors.Count > 0)
+            {
+                foreach (var d in noFhirDoctors)
+                {
+
+                    using (Model1 context = new Model1(connection.ConnectionString))
+                    {
+
+                        // Manual join - Views are broken
+                        var doctorRecord = context.Doctors
+                            .Where(doc => doc.doctorId == d.userId)
+                            .First();
+
+                        var userRecord = d;
+
+                        var city = context.Cities
+                        .Where(c => c.cityId == doctorRecord.workingPlaceCity)
+                        .First();
+
+                        string fhirId = connector.GetDoctorFhirId(doctorRecord, userRecord, city); // retrieves existing FHIR entity or creates new one
+
+                        UpdateFhirId(fhirId, d.userId);
+
+                        config.AddLog("Doctor: " + doctorRecord.evidenceNumber + " - FHIR ID saved: " + fhirId);
+                        Console.WriteLine("Doctor: " + doctorRecord.evidenceNumber + " - FHIR ID saved: " + fhirId);
+                    }
+
+                }
             }
         }
 
@@ -74,26 +193,7 @@ namespace fhir_integration
                 nationalIdentificationNumber = Regex.Replace(nationalIdentificationNumber, @"[^\d]", "");
                 patient.Add("nationalIdentificationNumber", nationalIdentificationNumber);
                 patient.Add("assignedDoctorId", patientRecord.assignedDoctor.ToString());
-
-                if (userRecord.fhirId == null)
-                {
-                    var city = context.Cities
-                    .Where(c => c.cityId == patientRecord.cityId)
-                    .First();
-
-                    string fhirId = connector.GetFhirId(patient["nationalIdentificationNumber"], patientRecord, userRecord, city);
-                    patient.Add("fhirId", fhirId);
-                    UpdateFhirId(fhirId, userId);
-
-
-                    config.AddLog("Patient: " + patient["nationalIdentificationNumber"] + " - FHIR ID saved: " + fhirId);
-                    Console.WriteLine("Patient: " + patient["nationalIdentificationNumber"] + " - FHIR ID saved: " + fhirId);
-                }
-                else
-                {
-                    patient.Add("fhirId", userRecord.fhirId);
-                }
-
+                patient.Add("fhirId", userRecord.fhirId);
                 patient.Add("firstName", userRecord.firstName);
                 patient.Add("lastName", userRecord.lastName);
 
@@ -106,26 +206,20 @@ namespace fhir_integration
         // Tags as synced in app DB
         public bool TagAsSynced(int measurementId)
         {
-            if (measurementId != 0)
-            {
-                using (Model1 context = new Model1(connection.ConnectionString))
-                {
-                    var measurement = context.BloodPressureMeasurements
-                        .Where(m => m.measurementId == measurementId)
-                        .First();
 
-                    measurement.fhirSynced = 1;
-
-                    context.SaveChanges();
-                    Console.WriteLine("Measurement synced - ID: " + measurementId.ToString());
-                    return true;
-                }
-            }
-            else
+            using (Model1 context = new Model1(connection.ConnectionString))
             {
-                Console.WriteLine("Skipping the measurement");
-                return false;
+                var measurement = context.BloodPressureMeasurements
+                    .Where(m => m.measurementId == measurementId)
+                    .First();
+
+                measurement.fhirSynced = 1;
+
+                context.SaveChanges();
+                Console.WriteLine("Measurement synced - ID: " + measurementId.ToString());
+                return true;
             }
+
 
         }
 
@@ -152,31 +246,11 @@ namespace fhir_integration
 
             Console.WriteLine(" \n Sync start - " + DateTime.Now.ToString());
             config.AddLog("Sync start");
-            var unsyncedData = GetUnsyncedData();
-            Console.WriteLine("Unsynced measurements count: " + unsyncedData.Count);
-            string measurementIds = "";
-            int successCount = 0;
 
-            foreach (BloodPressureMeasurements record in unsyncedData)
-            {
-                int userId = record.patientId;
-                Dictionary<string, string> patient = ParsePatient(userId);
-
-                int savedMeasurementId = connector.SaveFhirObservation(patient, record);
-                bool success = TagAsSynced(savedMeasurementId);
-                if (success)
-                {
-                    measurementIds += savedMeasurementId.ToString() + " ";
-                    successCount++;
-                }
-
-            }
-
-            Console.WriteLine("Synced measurements count: " + successCount.ToString());
-            Console.WriteLine("Synced measurements - IDs: " + measurementIds);
-
-            config.AddLog("Synced measurements: " + successCount.ToString() + " - IDs: " + measurementIds);
-
+            HandleDoctorsWithoutFhir();
+            HandlePatientsWithoutFhir();
+            HandleUnsyncedMeasurements();
+            
             Console.WriteLine("Sync end - " + DateTime.Now.ToString());
             config.AddLog("Sync end");
 
@@ -191,14 +265,20 @@ namespace fhir_integration
             using (Model1 context = new Model1(connection.ConnectionString))
             {
                 var measurements = context.BloodPressureMeasurements.ToList();
+                var fhir = context.Users.ToList();
 
                 foreach (var m in measurements)
                 {
                     m.fhirSynced = 0;
                 }
 
+                foreach (var f in fhir)
+                {
+                    f.fhirId = null;
+                }
+
                 context.SaveChanges();
-                
+
             }
 
 

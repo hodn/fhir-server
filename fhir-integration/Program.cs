@@ -44,8 +44,8 @@ namespace fhir_integration
                 config.AddLog(e.Message);
             }
 
-            //transformer.ResetDbSynced();
-            //connector.DeleteObs();
+            transformer.ResetDbSynced();
+            connector.DeleteObs();
 
             int intervalToMillis = config.interval * 60 * 1000;
             int retryIntervalToMillis = config.retryInterval * 60 * 1000;
@@ -89,7 +89,7 @@ namespace fhir_integration
                     catch (Exception e)
                     {
                         config.AddLog(e.Message); // Log to file
-                        Console.WriteLine(e.Message);
+                        Console.WriteLine(e.ToString());
                         syncInterval.Stop(); // stop normal interval
                         retryInterval.Start(); // trigger retry interval
                         transformer.errorCount++;

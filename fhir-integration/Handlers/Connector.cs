@@ -75,25 +75,25 @@ namespace fhir_integration
 
         }
 
-        public string GetFhirId(string identifier, Patients patientRecord, Users userRecord, Cities city)
+        public string GetPatientFhirId(Patients patientRecord, Users userRecord, Cities city, DoctorView doctorRecord)
         {
-
+            string rawIdentifier = patientRecord.nationalIdentificationNumber;
+            string identifier = Regex.Replace(rawIdentifier, @"[^\d]", ""); // escaping to numbers and letters only
             Bundle results = client.Search<Patient>(new string[] { "identifier:exact=" + identifier });
             string fhirId = null;
 
             if (results.Entry.Count == 0) // No matching FHIR entity
             {
                 // Create a new FHIR identity
-                // return fhir ID
 
-                fhirId = UploadFhirPatient(patientRecord, userRecord, city);
+                fhirId = UploadFhirPatient(patientRecord, userRecord, city, doctorRecord);
 
-                Console.WriteLine("Patient: " + identifier + " - FHIR entity created: " + fhirId);
-                config.AddLog("Patient: " + identifier + " - FHIR entity created: " + fhirId);
+                Console.WriteLine("Patient: " + patientRecord.nationalIdentificationNumber + " - FHIR entity created: " + fhirId);
+
                 return fhirId;
             }
 
-            foreach (var e in results.Entry)
+            foreach (var e in results.Entry) // FHIR Id exists, return it
             {
                 var patient = (Patient)e.Resource;
                 fhirId = patient.Id.ToString();
@@ -102,9 +102,34 @@ namespace fhir_integration
             return fhirId;
         }
 
+        public string GetDoctorFhirId(Doctors doctorRecord, Users userRecord, Cities city)
+        {
+            string rawIdentifier = doctorRecord.evidenceNumber.ToString();
+            string identifier = Regex.Replace(rawIdentifier, @"[^\d]", ""); // escaping to numbers and letters only
+            Bundle results = client.Search<Practitioner>(new string[] { "identifier:exact=" + identifier });
+            string fhirId = null;
 
-        // Testing purposes
-        public string UploadFhirPatient(Patients patientRecord, Users userRecord, Cities city)
+            if (results.Entry.Count == 0) // No matching FHIR entity
+            {
+                // Create a new FHIR identity
+
+                fhirId = UploadFhirPractitioner(doctorRecord, userRecord, city);
+
+                Console.WriteLine("Doctor: " + doctorRecord.evidenceNumber + " - FHIR entity created: " + fhirId);
+
+                return fhirId;
+            }
+
+            foreach (var e in results.Entry) // FHIR Id exists, return it
+            {
+                var patient = (Practitioner)e.Resource;
+                fhirId = patient.Id.ToString();
+            }
+
+            return fhirId;
+        }
+
+        public string UploadFhirPatient(Patients patientRecord, Users userRecord, Cities city, DoctorView doctorRecord)
         {
             var pat = new Patient();
             pat.Active = true;
@@ -121,7 +146,10 @@ namespace fhir_integration
 
             var mail = new ContactPoint(ContactPoint.ContactPointSystem.Email, ContactPoint.ContactPointUse.Mobile, userRecord.email);
             mail.Rank = 1;
+            var phone = new ContactPoint(ContactPoint.ContactPointSystem.Phone, ContactPoint.ContactPointUse.Mobile, patientRecord.telNumber.ToString());
+            phone.Rank = 2;
             pat.Telecom.Add(mail);
+            pat.Telecom.Add(phone);
 
             pat.Gender = patientRecord.sex == 1 ? AdministrativeGender.Male : AdministrativeGender.Female;
 
@@ -137,36 +165,62 @@ namespace fhir_integration
             pat.Address.Add(address);
 
             var createdPat = client.Create(pat);
+            var fhirId = createdPat.Id;
 
-            return createdPat.Id;
+            AssignPractitioner(fhirId, doctorRecord);
+
+            return fhirId;
         }
 
-        public void UploadFhirPractitioner()
+        public string UploadFhirPractitioner(Doctors doctorRecord, Users userRecord, Cities city)
         {
-            var pat = new Practitioner();
-            pat.Active = true;
+            var doc = new Practitioner();
+            doc.Active = true;
 
             var id = new Identifier();
             id.System = "https://www.lkcr.cz/seznam-lekaru-426.html";
-            id.Value = "1110905143";
-            pat.Identifier.Add(id);
+            string rawIdentifier = doctorRecord.evidenceNumber.ToString();
+            id.Value = Regex.Replace(rawIdentifier, @"[^\d]", ""); ;
+            doc.Identifier.Add(id);
 
-            var name = new HumanName().WithGiven("Miroslav").AndFamily("Milý");
-            name.Prefix = new string[] { "MuDr." };
+            var name = new HumanName().WithGiven(userRecord.firstName).AndFamily(userRecord.lastName);
+            name.Prefix = new string[] { doctorRecord.nameTitle };
             name.Use = HumanName.NameUse.Official;
-            pat.Name = name;
+            doc.Name = name;
 
-            pat.BirthDate = "1969-02-12";
+            doc.Gender = AdministrativeGender.Unknown;
 
-            var mail = new ContactPoint(ContactPoint.ContactPointSystem.Email, ContactPoint.ContactPointUse.Mobile, "miroslav.mily@posta.cz");
-            pat.Telecom.Add(mail);
+            var mail = new ContactPoint(ContactPoint.ContactPointSystem.Email, ContactPoint.ContactPointUse.Mobile, userRecord.email);
+            doc.Telecom.Add(mail);
 
-            pat.Gender = AdministrativeGender.Male;
+            var address = new Address()
+            {
+                Line = new string[] { doctorRecord.workingPlaceAddress },
+                City = city.cityName,
+                PostalCode = city.zipCode,
+                Country = city.countryCode
+            };
+            doc.Address.Add(address);
 
-            var created_pat = client.Create(pat);
-            Console.WriteLine("Doktor");
+            var createdDoc = client.Create(doc);
+
+            return createdDoc.Id;
         }
 
+        public void AssignPractitioner(string patientFhirId, DoctorView doctorRecord)
+        {
+
+            var pat_A = client.Read<Patient>("Patient/" + patientFhirId);
+            var reference = new ResourceReference();
+            reference.Reference = config.fhirServer + "/Practitioner/" + doctorRecord.fhirId;
+            reference.Display = "Miroslav Milý 1110905143";
+            reference.Display = doctorRecord.lastName + " " + doctorRecord.firstName + " " + doctorRecord.evidenceNumber + " " + doctorRecord.email;
+            pat_A.CareProvider.Add(reference);
+            var updated_pat = client.Update(pat_A);
+
+        }
+
+        // Testing purposes
         public void UploadFhirPatientManual()
         {
             var pat = new Patient();
@@ -231,7 +285,7 @@ namespace fhir_integration
             Console.WriteLine("Doktor");
         }
 
-        public void AssignPractitioner()
+        public void AssignPractitionerManual()
         {
 
             var pat_A = client.Read<Patient>("Patient/3");
@@ -248,7 +302,12 @@ namespace fhir_integration
 
             var conditions = new SearchParams();
             conditions.Add("status", "final");
-            client.Delete("Observation", conditions);
+            //client.Delete("Observation", conditions);
+
+            var personConditions = new SearchParams().Where("identifier!=0");
+            client.Delete("Practitioner", personConditions);
+            client.Delete("Patient", personConditions);
+
 
         }
     }
