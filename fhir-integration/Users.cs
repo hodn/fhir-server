@@ -25,6 +25,9 @@ namespace fhir_integration
         [StringLength(255)]
         public string password { get; set; }
 
+        [StringLength(20)]
+        public string nameTitle { get; set; }
+
         [Required]
         [StringLength(20)]
         public string firstName { get; set; }

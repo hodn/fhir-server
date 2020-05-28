@@ -51,7 +51,8 @@ namespace fhir_integration
 
             var sub = new ResourceReference();
             sub.Reference = (config.fhirServer + "/Patient/") + patient["fhirId"];
-            sub.Display = patient["nationalIdentificationNumber"] + " " + patient["lastName"] + " " + patient["firstName"];
+            string nameTitle = String.IsNullOrWhiteSpace(patient["nameTitle"]) ? "" : patient["nameTitle"] + " ";
+            sub.Display = patient["nationalIdentificationNumber"] + " " + nameTitle + patient["lastName"] + " " + patient["firstName"];
             obs.Subject = sub;
 
             var sys = new Observation.ComponentComponent();
@@ -143,6 +144,7 @@ namespace fhir_integration
             pat.Identifier.Add(id);
 
             var name = new HumanName().WithGiven(userRecord.firstName).AndFamily(userRecord.lastName);
+            if (!String.IsNullOrWhiteSpace(userRecord.nameTitle)) name.Prefix = new string[] { userRecord.nameTitle };
             name.Use = HumanName.NameUse.Official;
             pat.Name.Add(name);
 
@@ -187,7 +189,7 @@ namespace fhir_integration
             doc.Identifier.Add(id);
 
             var name = new HumanName().WithGiven(userRecord.firstName).AndFamily(userRecord.lastName);
-            name.Prefix = new string[] { doctorRecord.nameTitle };
+            if (!String.IsNullOrWhiteSpace(userRecord.nameTitle)) name.Prefix = new string[] { userRecord.nameTitle };
             name.Use = HumanName.NameUse.Official;
             doc.Name = name;
 
@@ -217,7 +219,7 @@ namespace fhir_integration
             var pat = client.Read<Patient>("Patient/" + patientFhirId);
             var reference = new ResourceReference();
             reference.Reference = config.fhirServer + "/Practitioner/" + doctorRecord.fhirId;
-            reference.Display = doctorRecord.evidenceNumber + " " + doctorRecord.firstName + " " + doctorRecord.lastName + " " + doctorRecord.email;
+            reference.Display = doctorRecord.evidenceNumber + " " + doctorRecord.nameTitle + " " + doctorRecord.lastName + " " + doctorRecord.firstName + " " + doctorRecord.email;
             pat.CareProvider.Add(reference);
             var updatedPat = client.Update(pat);
 

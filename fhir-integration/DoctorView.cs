@@ -29,8 +29,6 @@ namespace fhir_integration
         [StringLength(50)]
         public string email { get; set; }
 
-        [Key]
-        [Column(Order = 3)]
         [StringLength(200)]
         public string fhirId { get; set; }
 

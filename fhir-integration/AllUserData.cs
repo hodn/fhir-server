@@ -24,6 +24,9 @@ namespace fhir_integration
         [StringLength(255)]
         public string password { get; set; }
 
+        [StringLength(20)]
+        public string nameTitle { get; set; }
+
         [Key]
         [Column(Order = 3)]
         [StringLength(20)]
@@ -45,21 +48,19 @@ namespace fhir_integration
         [Column(Order = 6)]
         public byte isAdmin { get; set; }
 
-        [Key]
-        [Column(Order = 7)]
         [StringLength(50)]
         public string token { get; set; }
 
         [Key]
-        [Column(Order = 8)]
+        [Column(Order = 7)]
         public DateTime registrationTs { get; set; }
 
         [Key]
-        [Column(Order = 9)]
+        [Column(Order = 8)]
         public byte isActive { get; set; }
 
         [Key]
-        [Column(Order = 10)]
+        [Column(Order = 9)]
         public byte isDeleted { get; set; }
 
         public int? patientId { get; set; }
@@ -88,9 +89,6 @@ namespace fhir_integration
         public DateTime? plannedVisitDate { get; set; }
 
         public int? doctorId { get; set; }
-
-        [StringLength(20)]
-        public string nameTitle { get; set; }
 
         public int? workingPlaceCity { get; set; }
 

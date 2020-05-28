@@ -74,9 +74,9 @@ namespace fhir_integration
             }
 
             Console.WriteLine("Synced measurements count: " + successCount.ToString());
-            Console.WriteLine("Synced measurements - IDs: " + measurementIds);
+            Console.WriteLine("Synced measurements - Application DB IDs: " + measurementIds);
 
-            config.AddLog("Synced measurements: " + successCount.ToString() + " - IDs: " + measurementIds);
+            config.AddLog("Synced measurements: " + successCount.ToString() + " - Application DB IDs: " + measurementIds);
         }
 
         // Handle Patients in DB without FHIR id
@@ -118,8 +118,8 @@ namespace fhir_integration
                         string fhirId = connector.GetPatientFhirId(patientRecord, userRecord, city, doctorRecord); // retrieves existing FHIR entity or creates new one
                         UpdateFhirId(fhirId, p.userId);
 
-                        config.AddLog("Patient: " + patientRecord.nationalIdentificationNumber + " - FHIR ID saved: " + fhirId);
-                        Console.WriteLine("Patient: " + patientRecord.nationalIdentificationNumber + " - FHIR ID saved: " + fhirId);
+                        config.AddLog("Patient: " + patientRecord.nationalIdentificationNumber + " - new FHIR ID: " + fhirId);
+                        Console.WriteLine("Patient: " + patientRecord.nationalIdentificationNumber + " - new FHIR ID: " + fhirId);
 
                     }
 
@@ -164,8 +164,8 @@ namespace fhir_integration
 
                         UpdateFhirId(fhirId, d.userId);
 
-                        config.AddLog("Doctor: " + doctorRecord.evidenceNumber + " - FHIR ID saved: " + fhirId);
-                        Console.WriteLine("Doctor: " + doctorRecord.evidenceNumber + " - FHIR ID saved: " + fhirId);
+                        config.AddLog("Doctor: " + doctorRecord.evidenceNumber + " - new FHIR ID: " + fhirId);
+                        Console.WriteLine("Doctor: " + doctorRecord.evidenceNumber + " - new FHIR ID: " + fhirId);
 
                     }
 
@@ -179,7 +179,6 @@ namespace fhir_integration
 
             using (Model1 context = new Model1(connection.ConnectionString))
             {
-                // Manual join - Views are broken
                 var patientRecord = context.Patients
                     .Where(p => p.patientId == userId)
                     .First();
@@ -188,17 +187,19 @@ namespace fhir_integration
                    .Where(u => u.userId == userId)
                    .First();
 
+                // Can be refactored - Dictionary is based of old logic without Entity Framework model
                 var patient = new Dictionary<string, string>();
 
                 string nationalIdentificationNumber = patientRecord.nationalIdentificationNumber;
                 nationalIdentificationNumber = Regex.Replace(nationalIdentificationNumber, @"[^\d]", "");
                 patient.Add("nationalIdentificationNumber", nationalIdentificationNumber);
                 patient.Add("assignedDoctorId", patientRecord.assignedDoctor.ToString());
+                patient.Add("nameTitle", userRecord.nameTitle);
                 patient.Add("fhirId", userRecord.fhirId);
                 patient.Add("firstName", userRecord.firstName);
                 patient.Add("lastName", userRecord.lastName);
 
-                return patient; // firstName, lastName, fhirId, assignedDoctorId, nationalIdentificationNumber
+                return patient; // firstName, lastName, nameTitle, fhirId, assignedDoctorId, nationalIdentificationNumber
 
             }
 
@@ -217,7 +218,7 @@ namespace fhir_integration
                 measurement.fhirSynced = 1;
 
                 context.SaveChanges();
-                Console.WriteLine("Measurement synced - ID: " + measurementId.ToString());
+                Console.WriteLine("Measurement synced - Application DB ID: " + measurementId.ToString());
                 return true;
             }
 
@@ -263,23 +264,40 @@ namespace fhir_integration
         public void ResetDbSynced()
         {
 
-            using (Model1 context = new Model1(connection.ConnectionString))
+            try
             {
-                var measurements = context.BloodPressureMeasurements.ToList();
-                var fhir = context.Users.ToList();
-
-                foreach (var m in measurements)
+                using (Model1 context = new Model1(connection.ConnectionString))
                 {
-                    m.fhirSynced = 0;
-                }
+                    var measurements = context.BloodPressureMeasurements.ToList();
+                    var fhir = context.Users.ToList();
 
-                foreach (var f in fhir)
+                    foreach (var m in measurements)
+                    {
+                        m.fhirSynced = 0;
+                    }
+
+                    foreach (var f in fhir)
+                    {
+                        f.fhirId = null;
+                    }
+
+                    context.SaveChanges();
+
+                }
+            }
+            catch (DbEntityValidationException e)
+            {
+                foreach (var eve in e.EntityValidationErrors)
                 {
-                    f.fhirId = null;
+                    Console.WriteLine("Entity of type \"{0}\" in state \"{1}\" has the following validation errors:",
+                        eve.Entry.Entity.GetType().Name, eve.Entry.State);
+                    foreach (var ve in eve.ValidationErrors)
+                    {
+                        Console.WriteLine("- Property: \"{0}\", Error: \"{1}\"",
+                            ve.PropertyName, ve.ErrorMessage);
+                    }
                 }
-
-                context.SaveChanges();
-
+                throw;
             }
 
 
