@@ -34,7 +34,7 @@ namespace fhir_integration
             var obs = new Observation();
 
             var id = new Identifier();
-            id.System = config.fhirServer;
+            id.System = config.db;
             id.Value = measurementId.ToString();
             obs.Identifier.Add(id);
 
@@ -306,7 +306,7 @@ namespace fhir_integration
 
             var conditions = new SearchParams();
             conditions.Add("status", "final");
-            //client.Delete("Observation", conditions);
+            client.Delete("Observation", conditions);
 
             var personConditions = new SearchParams().Where("identifier!=0");
             client.Delete("Practitioner", personConditions);
