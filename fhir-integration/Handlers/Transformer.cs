@@ -51,7 +51,7 @@ namespace fhir_integration
                 unsyncedMeasurements = context.BloodPressureMeasurements
                     .Where(m => m.fhirSynced == 0 && m.isDeleted == 0)
                     .ToList();
-                
+
             }
 
             Console.WriteLine("Unsynced measurements count: " + unsyncedMeasurements.Count);
@@ -98,7 +98,7 @@ namespace fhir_integration
 
                     using (Model1 context = new Model1(connection.ConnectionString))
                     {
-                        // Manual join - Views are broken
+                        // Manual join - was broken, now can be refactored with Views
                         var patientRecord = context.Patients
                             .Where(pat => pat.patientId == p.userId)
                             .FirstOrDefault();
@@ -116,17 +116,17 @@ namespace fhir_integration
                             .FirstOrDefault();
 
                         string fhirId = connector.GetPatientFhirId(patientRecord, userRecord, city, doctorRecord); // retrieves existing FHIR entity or creates new one
-
                         UpdateFhirId(fhirId, p.userId);
 
                         config.AddLog("Patient: " + patientRecord.nationalIdentificationNumber + " - FHIR ID saved: " + fhirId);
                         Console.WriteLine("Patient: " + patientRecord.nationalIdentificationNumber + " - FHIR ID saved: " + fhirId);
+
                     }
 
                 }
             }
 
-            
+
         }
 
         // Handle Doctors in DB without FHIR id
@@ -149,10 +149,10 @@ namespace fhir_integration
                     using (Model1 context = new Model1(connection.ConnectionString))
                     {
 
-                        // Manual join - Views are broken
+                        // Manual join - was broken, now can be refactored with Views
                         var doctorRecord = context.Doctors
                             .Where(doc => doc.doctorId == d.userId)
-                            .First();
+                            .FirstOrDefault();
 
                         var userRecord = d;
 
@@ -166,6 +166,7 @@ namespace fhir_integration
 
                         config.AddLog("Doctor: " + doctorRecord.evidenceNumber + " - FHIR ID saved: " + fhirId);
                         Console.WriteLine("Doctor: " + doctorRecord.evidenceNumber + " - FHIR ID saved: " + fhirId);
+
                     }
 
                 }
@@ -250,7 +251,7 @@ namespace fhir_integration
             HandleDoctorsWithoutFhir();
             HandlePatientsWithoutFhir();
             HandleUnsyncedMeasurements();
-            
+
             Console.WriteLine("Sync end - " + DateTime.Now.ToString());
             config.AddLog("Sync end");
 
@@ -258,7 +259,7 @@ namespace fhir_integration
 
         }
 
-        // Test purposes
+        // Test purposes - reset all FHIR info in DB
         public void ResetDbSynced()
         {
 

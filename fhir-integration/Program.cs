@@ -19,36 +19,31 @@ namespace fhir_integration
             try
             {
                 config.LoadConfig(); // Loads settings
-                config.CreateLogFile(); // Create log file in chosen directory
+                config.CreateLogFile(); // Create log file in user data FHIR_logs directory
 
             }
             catch (Exception e)
             {
-                Console.WriteLine("Application not configured: " + e.Message);
-                config.AddLog(e.Message);
+                Console.WriteLine("Please, check the configuration: " + e.Message);
+                Console.WriteLine("Press ANY key to exit.");
+                Console.ReadKey();
+                Environment.Exit(1);
             }
-            
 
-            Connector connector = new Connector(config);
-            Transformer transformer = new Transformer(connector, config);
+
+            Connector connector = new Connector(config); // FHIR Connector
+            Transformer transformer = new Transformer(connector, config); // DB handler and data transformer
             EmailHandler emailHandler = new EmailHandler(config.email);
 
-            try
-            {
-                connector.InitFhirConnection(); // defined route to FHIR server
-                transformer.InitDb(); // defined connection string to DB
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine("Database or FHIR server not connected: " + e.Message);
-                config.AddLog(e.Message);
-            }
+            connector.InitFhirConnection(); // defined route to FHIR server
+            transformer.InitDb(); // defined connection string to DB
 
-            transformer.ResetDbSynced();
-            connector.DeleteObs();
+            // Reset functions for test purposes
+            //transformer.ResetDbSynced();
+            //connector.DeleteObs();
 
-            int intervalToMillis = config.interval * 60 * 1000;
-            int retryIntervalToMillis = config.retryInterval * 60 * 1000;
+            int intervalToMillis = config.interval * 60 * 1000; // mins to milis
+            int retryIntervalToMillis = config.retryInterval * 60 * 1000; // mins to milis
 
             Timer syncInterval = new Timer(intervalToMillis); // normal interval
             Timer retryInterval = new Timer(retryIntervalToMillis); // retry interval
@@ -89,16 +84,16 @@ namespace fhir_integration
                     catch (Exception e)
                     {
                         config.AddLog(e.Message); // Log to file
-                        Console.WriteLine(e.ToString());
+                        Console.WriteLine(e.Message);
                         syncInterval.Stop(); // stop normal interval
                         retryInterval.Start(); // trigger retry interval
                         transformer.errorCount++;
                     }
                 }
 
-               
+
             }
-                 
+
 
 
             Console.ReadKey();

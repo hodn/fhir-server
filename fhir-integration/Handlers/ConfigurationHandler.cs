@@ -26,64 +26,59 @@ namespace fhir_integration
         // Loading configuration from XML file
         public void LoadConfig()
         {
-            try
+
+            XmlDocument configDoc = new XmlDocument();
+            configDoc.Load(@"config.xml");
+
+            XmlNodeList xnList = configDoc.GetElementsByTagName("config");
+
+            foreach (XmlNode node in xnList)
             {
-                XmlDocument configDoc = new XmlDocument();
-                configDoc.Load(@"config.xml");
+                interval = int.Parse(node["interval"].InnerText);
+                retryInterval = int.Parse(node["retryInterval"].InnerText);
+                email = node["email"].InnerText;
+                db = node["db"].InnerText;
+                dbUserId = node["dbUserId"].InnerText;
+                dbCatalog = node["dbCatalog"].InnerText;
+                dbPassword = node["dbPassword"].InnerText;
+                fhirServer = node["fhirServer"].InnerText;
 
-                XmlNodeList xnList = configDoc.GetElementsByTagName("config");
+                string hiddenPassword = "";
 
-                foreach (XmlNode node in xnList)
+                for (int i = 0; i < dbPassword.Length; i++)
                 {
-                    interval = int.Parse(node["interval"].InnerText);
-                    retryInterval = int.Parse(node["retryInterval"].InnerText);
-                    email = node["email"].InnerText;
-                    db = node["db"].InnerText;
-                    dbUserId = node["dbUserId"].InnerText;
-                    dbCatalog = node["dbCatalog"].InnerText;
-                    dbPassword = node["dbPassword"].InnerText;
-                    fhirServer = node["fhirServer"].InnerText;
-
-                    string hiddenPassword = "";
-
-                    for (int i = 0; i < dbPassword.Length; i++)
-                    {
-                        hiddenPassword += "*";
-                    }
+                    hiddenPassword += "*";
+                }
 
 
-                    Console.WriteLine("\n----Configuration loaded----");
-                    Console.WriteLine("Interval: " + interval.ToString() + " mins");
-                    Console.WriteLine("Recovery interval: " + retryInterval.ToString() + " mins");
-                    Console.WriteLine("Notification email: " + email);
-                    Console.WriteLine("\n");
-                    Console.WriteLine("Database: " + db);
-                    Console.WriteLine("Database user ID: " + dbUserId);
-                    Console.WriteLine("Database catalog: " + dbCatalog);
-                    Console.WriteLine("Database password: " + hiddenPassword);
-                    Console.WriteLine("FHIR server: " + fhirServer);
-                    Console.WriteLine("\n");
+                Console.WriteLine("\n----Configuration loaded----");
+                Console.WriteLine("Interval: " + interval.ToString() + " mins");
+                Console.WriteLine("Recovery interval: " + retryInterval.ToString() + " mins");
+                Console.WriteLine("Notification email: " + email);
+                Console.WriteLine("\n");
+                Console.WriteLine("Database: " + db);
+                Console.WriteLine("Database user ID: " + dbUserId);
+                Console.WriteLine("Database catalog: " + dbCatalog);
+                Console.WriteLine("Database password: " + hiddenPassword);
+                Console.WriteLine("FHIR server: " + fhirServer);
+                Console.WriteLine("\n");
 
 
-                };
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Invalid configuration: " + e.Message);
+            };
 
-            }
+
 
         }
 
-        // Creating log file for the current instance
+        // Creating log file for the current instance in user data dir
         public void CreateLogFile()
         {
             try
             {
                 DateTime time = DateTime.Now;
-                string[] timestamp = time.ToString("s").Split('T'); // makes file name from date
-                string fileName = timestamp[0] + ".txt";
-                string logDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +  @"\FHIR_logs\"; // gets user data directory
+                string[] timestamp = time.ToString("s").Split('T'); 
+                string fileName = timestamp[0] + ".txt"; // makes file name from date
+                string logDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\FHIR_logs\"; // gets user data directory
                 Directory.CreateDirectory(logDirectory); // creates FHIR logs folder if it does not exist
 
                 logPath = Path.Combine(logDirectory + fileName); // combine directory and filename to write
@@ -93,7 +88,7 @@ namespace fhir_integration
                     // Create a file to write to.
                     using (StreamWriter sw = File.CreateText(logPath))
                     {
-                        sw.WriteLine("{0}; {1} ", DateTime.Now.ToString(), "Initial start");
+                        sw.WriteLine("{0}; {1} ", DateTime.Now.ToString(), "Initial start"); // First log in file, first start of the app of the day
                     }
                 }
             }
@@ -113,7 +108,7 @@ namespace fhir_integration
             {
                 if (File.Exists(logPath))
                 {
-                    // Create a file to write to.
+                    // Appends logs to an existing log file.
                     using (StreamWriter sw = File.AppendText(logPath))
                     {
                         sw.WriteLine("{0}; {1}", DateTime.Now.ToString(), log);

@@ -21,15 +21,15 @@ namespace fhir_integration
             this.config = config;
         }
 
+        // Load and get connection string to FHIR server from config file
         public void InitFhirConnection()
         {
             client = new FhirClient(config.fhirServer);
         }
 
+        // Upload measurement to FHIR server
         public int SaveFhirObservation(Dictionary<string, string> patient, BloodPressureMeasurements measurement)
         {
-            if (patient == null) return 0;
-
             int measurementId = measurement.measurementId;
             var obs = new Observation();
 
@@ -75,17 +75,17 @@ namespace fhir_integration
 
         }
 
+        // Return patient FHIR ID
         public string GetPatientFhirId(Patients patientRecord, Users userRecord, Cities city, DoctorView doctorRecord)
         {
             string rawIdentifier = patientRecord.nationalIdentificationNumber;
-            string identifier = Regex.Replace(rawIdentifier, @"[^\d]", ""); // escaping to numbers and letters only
-            Bundle results = client.Search<Patient>(new string[] { "identifier:exact=" + identifier });
+            string identifier = Regex.Replace(rawIdentifier, @"[^\d]", ""); // removing excess chars from patient's business identifier (rodne cislo)
+            Bundle results = client.Search<Patient>(new string[] { "identifier:exact=" + identifier }); // searching in FHIR DB via patient's business identifier (rodne cislo)
             string fhirId = null;
 
             if (results.Entry.Count == 0) // No matching FHIR entity
             {
                 // Create a new FHIR identity
-
                 fhirId = UploadFhirPatient(patientRecord, userRecord, city, doctorRecord);
 
                 Console.WriteLine("Patient: " + patientRecord.nationalIdentificationNumber + " - FHIR entity created: " + fhirId);
@@ -102,6 +102,7 @@ namespace fhir_integration
             return fhirId;
         }
 
+        // Return doctor FHIR ID
         public string GetDoctorFhirId(Doctors doctorRecord, Users userRecord, Cities city)
         {
             string rawIdentifier = doctorRecord.evidenceNumber.ToString();
@@ -129,6 +130,7 @@ namespace fhir_integration
             return fhirId;
         }
 
+        // Upload patient to FHIR server
         public string UploadFhirPatient(Patients patientRecord, Users userRecord, Cities city, DoctorView doctorRecord)
         {
             var pat = new Patient();
@@ -137,7 +139,7 @@ namespace fhir_integration
             var id = new Identifier();
             id.System = "http://ciselniky.dasta.mzcr.cz/CD_DS4/hypertext/DSBET.htm";
             string rawIdentifier = patientRecord.nationalIdentificationNumber;
-            id.Value = Regex.Replace(rawIdentifier, @"[^\d]", ""); ;
+            id.Value = Regex.Replace(rawIdentifier, @"[^\d]", ""); // remove excess chars from patient's business identifier (rodne cislo)
             pat.Identifier.Add(id);
 
             var name = new HumanName().WithGiven(userRecord.firstName).AndFamily(userRecord.lastName);
@@ -167,11 +169,12 @@ namespace fhir_integration
             var createdPat = client.Create(pat);
             var fhirId = createdPat.Id;
 
-            AssignPractitioner(fhirId, doctorRecord);
+            AssignPractitioner(fhirId, doctorRecord); // Finds FHIR identity of patient's practitioner and references it
 
             return fhirId;
         }
 
+        // Upload doctor to FHIR server
         public string UploadFhirPractitioner(Doctors doctorRecord, Users userRecord, Cities city)
         {
             var doc = new Practitioner();
@@ -207,16 +210,16 @@ namespace fhir_integration
             return createdDoc.Id;
         }
 
+        // Reference doctor in newly uploaded patient - FHIR 
         public void AssignPractitioner(string patientFhirId, DoctorView doctorRecord)
         {
 
-            var pat_A = client.Read<Patient>("Patient/" + patientFhirId);
+            var pat = client.Read<Patient>("Patient/" + patientFhirId);
             var reference = new ResourceReference();
             reference.Reference = config.fhirServer + "/Practitioner/" + doctorRecord.fhirId;
-            reference.Display = "Miroslav Milý 1110905143";
-            reference.Display = doctorRecord.lastName + " " + doctorRecord.firstName + " " + doctorRecord.evidenceNumber + " " + doctorRecord.email;
-            pat_A.CareProvider.Add(reference);
-            var updated_pat = client.Update(pat_A);
+            reference.Display = doctorRecord.evidenceNumber + " " + doctorRecord.firstName + " " + doctorRecord.lastName + " " + doctorRecord.email;
+            pat.CareProvider.Add(reference);
+            var updatedPat = client.Update(pat);
 
         }
 
@@ -297,6 +300,7 @@ namespace fhir_integration
 
         }
 
+        // Delete all records on FHIR
         public void DeleteObs()
         {
 
