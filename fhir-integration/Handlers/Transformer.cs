@@ -98,7 +98,7 @@ namespace fhir_integration
 
                     using (Model1 context = new Model1(connection.ConnectionString))
                     {
-                        // Manual join - was broken, now can be refactored with Views
+                        // Manual join
                         var patientRecord = context.Patients
                             .Where(pat => pat.patientId == p.userId)
                             .FirstOrDefault();
@@ -149,7 +149,7 @@ namespace fhir_integration
                     using (Model1 context = new Model1(connection.ConnectionString))
                     {
 
-                        // Manual join - was broken, now can be refactored with Views
+                        // Manual join
                         var doctorRecord = context.Doctors
                             .Where(doc => doc.doctorId == d.userId)
                             .FirstOrDefault();
