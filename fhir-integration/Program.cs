@@ -12,7 +12,7 @@ namespace fhir_integration
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("FHIR Integrator");
+            Console.WriteLine("PAMOS FHIR Integrator");
 
             ConfigurationHandler config = new ConfigurationHandler();
 
@@ -55,11 +55,13 @@ namespace fhir_integration
                 Run(); // triggered by timer
             }
 
-            Console.WriteLine("Press any key to run the initial FHIR sync");
+            Console.WriteLine("=== Press ANY key to run the initial FHIR sync ===");
             Console.ReadKey();
+            Console.WriteLine("\n=== If you wish to exit and end the synchronization, press ENTER ===\n");
+            Console.WriteLine("-----------------------------------------");
 
             Run(); // Inital sync 
-
+           
             void Run()
             {
                 // If ran out of retries (reached normal interval) - send email and reset the interval
@@ -85,18 +87,17 @@ namespace fhir_integration
                     {
                         config.AddLog(e.Message); // Log to file
                         Console.WriteLine(e.Message);
+                        Console.WriteLine(e.ToString());
                         syncInterval.Stop(); // stop normal interval
                         retryInterval.Start(); // trigger retry interval
                         transformer.errorCount++;
                     }
                 }
 
-
+                Console.WriteLine("-----------------------------------------");
             }
 
-
-
-            Console.ReadKey();
+            Console.ReadLine();
         }
 
     }

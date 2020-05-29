@@ -145,7 +145,6 @@ namespace fhir_integration
             {
                 foreach (var d in noFhirDoctors)
                 {
-
                     using (Model1 context = new Model1(connection.ConnectionString))
                     {
 
@@ -157,8 +156,8 @@ namespace fhir_integration
                         var userRecord = d;
 
                         var city = context.Cities
-                        .Where(c => c.cityId == doctorRecord.workingPlaceCity)
-                        .First();
+                            .Where(c => c.cityId == doctorRecord.workingPlaceCity)
+                            .FirstOrDefault();
 
                         string fhirId = connector.GetDoctorFhirId(doctorRecord, userRecord, city); // retrieves existing FHIR entity or creates new one
 
@@ -246,17 +245,15 @@ namespace fhir_integration
         public void Sync()
         {
 
-            Console.WriteLine(" \n Sync start - " + DateTime.Now.ToString());
+            Console.WriteLine("\n* Sync start - " + DateTime.Now.ToString());
             config.AddLog("Sync start");
 
             HandleDoctorsWithoutFhir();
             HandlePatientsWithoutFhir();
             HandleUnsyncedMeasurements();
 
-            Console.WriteLine("Sync end - " + DateTime.Now.ToString());
+            Console.WriteLine("* Sync end - " + DateTime.Now.ToString() +"\n");
             config.AddLog("Sync end");
-
-            Console.WriteLine("\n");
 
         }
 

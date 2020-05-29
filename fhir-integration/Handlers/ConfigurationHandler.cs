@@ -63,7 +63,6 @@ namespace fhir_integration
                 Console.WriteLine("FHIR server: " + fhirServer);
                 Console.WriteLine("\n");
 
-
             };
 
 
