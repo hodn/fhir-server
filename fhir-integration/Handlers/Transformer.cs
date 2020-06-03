@@ -17,12 +17,14 @@ namespace fhir_integration
         private Connector connector { get; set; }
         private ConfigurationHandler config { get; set; }
         public int errorCount { get; set; }
+        public int outageDuration { get; set; }
 
         public Transformer(Connector connector, ConfigurationHandler config)
         {
             this.connector = connector;
             this.config = config;
             errorCount = 0;
+            outageDuration = 0;
         }
 
         // Building connection string for DB

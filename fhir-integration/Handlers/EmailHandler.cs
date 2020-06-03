@@ -36,8 +36,7 @@ namespace fhir_integration.Handlers
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Unable to send email",
-                    ex.ToString());
+                Console.WriteLine("Unable to send email", ex.Message);
             }
         }
     }

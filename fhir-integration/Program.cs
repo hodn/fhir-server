@@ -70,8 +70,10 @@ namespace fhir_integration
                     transformer.errorCount = 0; // reset error count
                     syncInterval.Start(); // trigger normal interval
                     retryInterval.Stop(); // stop retry interval
-                    emailHandler.Send("FHIR sync not available", "Dear Sir or Madam, \n \n the FHIR synchronization was not available during the last " + config.interval + " minutes. Please, check the service. \n Thank you for understanding. \n \n Your, FHIR Integrator");
-                    config.AddLog("Service not available for " + config.interval.ToString() + " mins." + " Sent notification email to: " + config.email);
+                    transformer.outageDuration += config.interval; // add to the outage time (minutes)
+                    emailHandler.Send("FHIR sync not available", "Dear Sir or Madam, \n \n the FHIR synchronization was not available during the last " + transformer.outageDuration.ToString() + " minutes. Please, check the service. \n \n Thank you for understanding. \n \n Kind regards,\n FHIR Integrator");
+                    Console.WriteLine(transformer.outageDuration.ToString());
+                    config.AddLog("Service not available for " + transformer.outageDuration.ToString() + " mins." + " Sent notification email to: " + config.email);
                     Console.WriteLine("Sent notification email to: " + config.email);
                 }
                 else
@@ -82,12 +84,12 @@ namespace fhir_integration
                         syncInterval.Start(); // trigger normal interval
                         retryInterval.Stop(); // stop retry interval
                         transformer.errorCount = 0; // reset error count
+                        transformer.outageDuration = 0; // accumulated outage time reset
                     }
                     catch (Exception e)
                     {
                         config.AddLog(e.Message); // Log to file
                         Console.WriteLine(e.Message);
-                        Console.WriteLine(e.ToString());
                         syncInterval.Stop(); // stop normal interval
                         retryInterval.Start(); // trigger retry interval
                         transformer.errorCount++;
