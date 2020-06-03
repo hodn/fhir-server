@@ -93,7 +93,7 @@ namespace fhir_integration
                     .ToList();
             }
 
-            if (noFhirPatients.Count > 0)
+            if (noFhirPatients.Any()) // If there are Patients without FHIR ID
             {
                 foreach (var p in noFhirPatients)
                 {
@@ -143,7 +143,7 @@ namespace fhir_integration
                     .ToList();
             }
 
-            if (noFhirDoctors.Count > 0)
+            if (noFhirDoctors.Any()) // If there are doctors without FHIR ID
             {
                 foreach (var d in noFhirDoctors)
                 {
@@ -250,9 +250,23 @@ namespace fhir_integration
             Console.WriteLine("\n* Sync start - " + DateTime.Now.ToString());
             config.AddLog("Sync start");
 
-            HandleDoctorsWithoutFhir();
-            HandlePatientsWithoutFhir();
-            HandleUnsyncedMeasurements();
+            using (Model1 context = new Model1(connection.ConnectionString))
+            {
+                var patients = context.Patients; // Load the Patients table
+                
+                if (patients.Any()) // If the Patients table is not empty, do sync (usually initial start)
+                {
+                    HandleDoctorsWithoutFhir();
+                    HandlePatientsWithoutFhir();
+                    HandleUnsyncedMeasurements();
+                }
+                else
+                {
+                    Console.WriteLine("No patients in the application database. Skipping the synchronization.");
+                    config.AddLog("No patients in the database");
+                }
+
+            }
 
             Console.WriteLine("* Sync end - " + DateTime.Now.ToString() +"\n");
             config.AddLog("Sync end");
