@@ -89,8 +89,6 @@ namespace fhir_integration
                 // Create a new FHIR identity
                 fhirId = UploadFhirPatient(patientRecord, userRecord, city, doctorRecord);
 
-                Console.WriteLine("Patient: " + patientRecord.nationalIdentificationNumber + " - FHIR entity created: " + fhirId);
-
                 return fhirId;
             }
 
@@ -116,8 +114,6 @@ namespace fhir_integration
                 // Create a new FHIR identity
 
                 fhirId = UploadFhirPractitioner(doctorRecord, userRecord, city);
-
-                Console.WriteLine("Doctor: " + doctorRecord.evidenceNumber + " - FHIR entity created: " + fhirId);
 
                 return fhirId;
             }
