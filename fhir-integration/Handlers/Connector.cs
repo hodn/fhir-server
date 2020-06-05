@@ -84,7 +84,7 @@ namespace fhir_integration
             Bundle results = client.Search<Patient>(new string[] { "identifier:exact=" + identifier }); // searching in FHIR DB via patient's business identifier (rodne cislo)
             string fhirId = null;
 
-            if (results.Entry.Count == 0) // No matching FHIR entity
+            if (!results.Entry.Any()) // No matching FHIR entity
             {
                 // Create a new FHIR identity
                 fhirId = UploadFhirPatient(patientRecord, userRecord, city, doctorRecord);
@@ -109,7 +109,7 @@ namespace fhir_integration
             Bundle results = client.Search<Practitioner>(new string[] { "identifier:exact=" + identifier });
             string fhirId = null;
 
-            if (results.Entry.Count == 0) // No matching FHIR entity
+            if (!results.Entry.Any()) // No matching FHIR entity
             {
                 // Create a new FHIR identity
 
